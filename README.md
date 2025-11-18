@@ -2,7 +2,7 @@
 
 > 容器化的 AI Agent 运行工具，支持 Claude Code、Codex、Gemini 等多种 AI Agent
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)](https://www.docker.com/)
 [![Version](https://img.shields.io/badge/Version-1.0.1-green.svg)](./VERSION)
 
@@ -249,7 +249,17 @@ docker ps -a | grep gbox
 
 ## 📄 许可证
 
-[MIT License](./LICENSE)
+本项目采用 [Apache License 2.0](./LICENSE) 许可证。
+
+### 第三方组件
+
+本项目包含以下使用不同许可证的第三方组件：
+
+- **happy, happy-cli, happy-server** (vendor/ 目录)
+  - 许可证: MIT License
+  - 这些组件作为 Git 子模块引入，保持其原有 MIT 许可证
+
+详见 [NOTICE](./NOTICE) 文件了解完整的第三方组件信息。
 
 ## 🙏 致谢
 
