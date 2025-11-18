@@ -1,0 +1,303 @@
+#!/bin/bash
+# gbox - Gravtice AgentBox 主脚本（加载模块化组件并执行命令路由）
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/lib/state.sh"
+source "$SCRIPT_DIR/lib/docker.sh"
+source "$SCRIPT_DIR/lib/container.sh"
+source "$SCRIPT_DIR/lib/agent.sh"
+source "$SCRIPT_DIR/lib/image.sh"
+source "$SCRIPT_DIR/lib/oauth.sh"
+source "$SCRIPT_DIR/lib/keepalive.sh"
+
+check_docker
+check_jq
+init_state
+
+# 加载 .env 和 .env.local 文件
+load_env_files
+
+case "${1:-}" in
+    list)
+        list_containers
+        ;;
+    status)
+        show_status
+        ;;
+    stop)
+        stop_container "$2"
+        ;;
+    stop-all)
+        stop_all_containers
+        ;;
+    clean)
+        clean_containers
+        ;;
+    oauth)
+        handle_oauth_command "${@:2}"
+        ;;
+    keepalive)
+        handle_keepalive_command "${@:2}"
+        ;;
+    pull)
+        pull_image "$2"
+        ;;
+    push)
+        push_image "$2"
+        ;;
+    logs)
+        show_logs "$2"
+        ;;
+    exec)
+        exec_command "$2" "${@:3}"
+        ;;
+    shell)
+        shell_command "$2"
+        ;;
+    build)
+        build_image "$2"
+        ;;
+    -h|--help|help)
+        print_usage "$2"
+        ;;
+    *)
+        # 命令格式：
+        # gbox <agent> [-- <参数>]       -> only-local 模式
+        # gbox happy <agent> [-- <参数>] -> local-remote 模式
+        first_arg="$1"
+
+        if [[ -z "$first_arg" ]]; then
+            echo -e "${RED}错误: 请指定 agent 或命令${NC}"
+            echo ""
+            print_usage
+            exit 1
+        fi
+
+        run_mode=""
+        agent=""
+        agent_args=()
+
+        if [[ "$first_arg" == "happy" ]]; then
+            run_mode="local-remote"
+            agent="$2"
+
+            if [[ -z "$agent" ]]; then
+                echo -e "${RED}错误: 请指定 agent${NC}"
+                echo -e "${YELLOW}用法: gbox happy <agent> [-- <参数>]${NC}"
+                echo -e "${YELLOW}示例: gbox happy claude${NC}"
+                exit 1
+            fi
+
+            if ! is_valid_agent "$agent"; then
+                echo -e "${RED}错误: 不支持的 agent '$agent'${NC}"
+                echo -e "${YELLOW}支持的 agent: ${SUPPORTED_AGENTS[*]}${NC}"
+                echo ""
+                print_usage
+                exit 1
+            fi
+
+            shift 2
+
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --memory|-m)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --memory/-m 需要参数${NC}"
+                            exit 1
+                        fi
+                        MEMORY_LIMIT="$1"
+                        shift
+                        ;;
+                    --cpu|-c)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --cpu/-c 需要参数${NC}"
+                            exit 1
+                        fi
+                        CPU_LIMIT="$1"
+                        shift
+                        ;;
+                    --ports)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --ports 需要参数${NC}"
+                            echo -e "${YELLOW}格式: --ports \"8000:8000;7000;7001\"${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_PORTS="$1"
+                        shift
+                        ;;
+                    --ref-dirs)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --ref-dirs 需要参数${NC}"
+                            echo -e "${YELLOW}格式: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_REF_DIRS="$1"
+                        shift
+                        ;;
+                    --proxy)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --proxy 需要参数${NC}"
+                            echo -e "${YELLOW}示例: --proxy http://127.0.0.1:7890${NC}"
+                            exit 1
+                        fi
+                        AGENT_PROXY="$1"
+                        shift
+                        ;;
+                    --api-key)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --api-key 需要参数${NC}"
+                            exit 1
+                        fi
+                        ANTHROPIC_API_KEY="$1"
+                        shift
+                        ;;
+                    --debug)
+                        DEBUG="happy:*"
+                        shift
+                        ;;
+                    --keep)
+                        CONTAINER_KEEP="true"
+                        shift
+                        ;;
+                    --name)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --name 需要参数${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_NAME="$1"
+                        shift
+                        ;;
+                    --)
+                        shift
+                        agent_args=("$@")
+                        break
+                        ;;
+                    *)
+                        echo -e "${RED}错误: 未知的 gbox 参数 '$1'${NC}"
+                        echo -e "${YELLOW}用法: gbox happy $agent [gbox参数] [-- <agent参数>]${NC}"
+                        echo -e "${YELLOW}gbox 参数: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}示例: gbox happy $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
+                        exit 1
+                        ;;
+                esac
+            done
+        else
+            run_mode="only-local"
+            agent="$first_arg"
+
+            if ! is_valid_agent "$agent"; then
+                echo -e "${RED}错误: 不支持的 agent '$agent'${NC}"
+                echo -e "${YELLOW}支持的 agent: ${SUPPORTED_AGENTS[*]}${NC}"
+                echo ""
+                print_usage
+                exit 1
+            fi
+
+            shift
+
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --memory|-m)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --memory/-m 需要参数${NC}"
+                            exit 1
+                        fi
+                        MEMORY_LIMIT="$1"
+                        shift
+                        ;;
+                    --cpu|-c)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --cpu/-c 需要参数${NC}"
+                            exit 1
+                        fi
+                        CPU_LIMIT="$1"
+                        shift
+                        ;;
+                    --ports)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --ports 需要参数${NC}"
+                            echo -e "${YELLOW}格式: --ports \"8000:8000;7000;7001\"${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_PORTS="$1"
+                        shift
+                        ;;
+                    --ref-dirs)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --ref-dirs 需要参数${NC}"
+                            echo -e "${YELLOW}格式: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_REF_DIRS="$1"
+                        shift
+                        ;;
+                    --proxy)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --proxy 需要参数${NC}"
+                            echo -e "${YELLOW}示例: --proxy http://127.0.0.1:7890${NC}"
+                            exit 1
+                        fi
+                        AGENT_PROXY="$1"
+                        shift
+                        ;;
+                    --api-key)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --api-key 需要参数${NC}"
+                            exit 1
+                        fi
+                        ANTHROPIC_API_KEY="$1"
+                        shift
+                        ;;
+                    --debug)
+                        DEBUG="happy:*"
+                        shift
+                        ;;
+                    --keep)
+                        CONTAINER_KEEP="true"
+                        shift
+                        ;;
+                    --name)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}错误: --name 需要参数${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_NAME="$1"
+                        shift
+                        ;;
+                    --)
+                        shift
+                        agent_args=("$@")
+                        break
+                        ;;
+                    *)
+                        echo -e "${RED}错误: 未知的 gbox 参数 '$1'${NC}"
+                        echo -e "${YELLOW}用法: gbox $agent [gbox参数] [-- <agent参数>]${NC}"
+                        echo -e "${YELLOW}gbox 参数: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}示例: gbox $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
+                        exit 1
+                        ;;
+                esac
+            done
+        fi
+
+        agent_session "$run_mode" "$agent" "${agent_args[@]}"
+        ;;
+esac
