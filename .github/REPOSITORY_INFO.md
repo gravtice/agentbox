@@ -8,7 +8,7 @@ This file documents the GitHub repository settings for reference and version con
 
 **Description**:
 ```
-容器化的 AI Agent 运行工具，支持 Claude Code、Codex、Gemini 等多种 AI Agent
+开箱即用的容器化 AI 编程助手，无需安装即可安全自动化运行 Claude Code、Codex、Gemini
 ```
 
 **Website**:
@@ -31,7 +31,7 @@ These settings are configured on GitHub.com and cannot be set via local files.
 
 ### Using GitHub CLI
 ```bash
-gh repo edit --description "容器化的 AI Agent 运行工具，支持 Claude Code、Codex、Gemini 等多种 AI Agent"
+gh repo edit --description "开箱即用的容器化 AI 编程助手，无需安装即可安全自动化运行 Claude Code、Codex、Gemini"
 gh repo edit --homepage "https://gravtice.com"
 gh repo edit --add-topic docker,ai,claude-code,openai-codex,gemini,container,devtools,cli,oauth,automation
 ```
@@ -43,7 +43,7 @@ curl -X PATCH \
   -H "Accept: application/vnd.github.v3+json" \
   https://api.github.com/repos/Gravtice/AgentBox \
   -d '{
-    "description": "容器化的 AI Agent 运行工具，支持 Claude Code、Codex、Gemini 等多种 AI Agent",
+    "description": "开箱即用的容器化 AI 编程助手，无需安装即可安全自动化运行 Claude Code、Codex、Gemini",
     "homepage": "https://gravtice.com",
     "topics": ["docker", "ai", "claude-code", "openai-codex", "gemini", "container", "devtools", "cli", "oauth", "automation"]
   }'
