@@ -1,29 +1,29 @@
 # AgentBox
 
-> 容器化的 AI Agent 运行工具，目前支持 Claude Code、Codex、Gemini CLI
+> Containerized AI Agent runtime tool, currently supporting Claude Code, Codex, and Gemini CLI
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)](https://www.docker.com/)
 [![Version](https://img.shields.io/badge/Version-1.0.1-green.svg)](./VERSION)
 
-## ✨ 特性
+## ✨ Features
 
-- 🚀 **一键启动** - 自动创建和管理容器，如同本地使用
-- 🔐 **OAuth 共享** - 所有容器共享登录态，无需重复登录
-- 🌐 **远程控制** - 支持 Happy 远程模式，随时随地在手机上控制 AI Agent
-- 📦 **完全隔离** - 每个项目独立容器，目录、进程、网络完全隔离，互不影响
-- 🛡️ **安全模式** - 自动跳过权限询问，安全无害的 YOLO 模式
-- 🧹 **可选清理** - 支持退出时自动删除容器，保持环境整洁
-- ⚙️ **灵活配置** - 支持端口映射、参考目录、代理等丰富配置
-- ⌨️ **智能补全** - 提供 Zsh 自动补全插件
+- 🚀 **One-Click Startup** - Automatically creates and manages containers, just like local usage
+- 🔐 **Shared OAuth** - All containers share login sessions, no repeated authentication
+- 🌐 **Remote Control** - Supports Happy remote mode, control AI Agents from your phone anywhere, anytime
+- 📦 **Complete Isolation** - Each project gets its own container with fully isolated directories, processes, and networks
+- 🛡️ **Safe Mode** - Automatically skips permission prompts with a safe and harmless YOLO mode
+- 🧹 **Optional Cleanup** - Supports automatic container deletion on exit to keep your environment clean
+- ⚙️ **Flexible Configuration** - Rich configuration options including port mapping, reference directories, proxy settings, and more
+- ⌨️ **Smart Completion** - Provides Zsh auto-completion plugin
 
-## 📋 前置要求
+## 📋 Prerequisites
 
-- Docker（支持 Docker Desktop、OrbStack 等）
+- Docker (supports Docker Desktop, OrbStack, etc.)
 - bash
-- jq（JSON 处理工具）
+- jq (JSON processing tool)
 
-### 安装依赖
+### Installing Dependencies
 
 **macOS:**
 ```bash
@@ -35,175 +35,173 @@ brew install jq
 sudo apt-get install jq
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 克隆仓库
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Gravtice/AgentBox.git
 cd AgentBox
 ```
 
-### 2. 构建镜像
+### 2. Build the Image
 
 ```bash
 ./gbox build
 ```
 
-### 3. 启动 AI Agent
+### 3. Start an AI Agent
 
 ```bash
-# 本地模式：在当前目录启动 Claude Code
+# Local mode: Start Claude Code in current directory
 ./gbox claude
 
-# 远程控制模式：启动 Happy + Claude Code
+# Remote control mode: Start Happy + Claude Code
 ./gbox happy claude
 
-# 启动其他 AI Agent
-./gbox codex                            # 启动 Codex
-./gbox gemini                           # 启动 Gemini
+# Start other AI Agents
+./gbox codex                            # Start Codex
+./gbox gemini                           # Start Gemini
 
-# 指定工作目录
+# Specify working directory
 cd ~/projects/myapp
 ./gbox claude
 ```
 
-就这么简单！容器会自动创建、启动，退出时可选择自动清理。
+That's it! Containers are automatically created and started, with optional automatic cleanup on exit.
 
-> 💡 **提示**: 查看 [快速入门指南](./QUICKSTART.md) 了解更多使用方法
+> 💡 **Tip**: Check out the [Quick Start Guide](./QUICKSTART.md) for more usage examples
 
-## 📖 文档
+## 📖 Documentation
 
-### 用户文档
-- [快速入门](./QUICKSTART.md) - 5分钟上手指南
-- [架构设计](./docs/ARCHITECTURE.md) - 了解 AgentBox 的设计理念
-- [自定义镜像](./docs/CUSTOM_IMAGE.md) - 制作自己的 Agent 镜像
-- [资源配置](./docs/RESOURCE_CONFIG.md) - 内存、CPU、端口等配置
-- [Worktree 支持](./docs/WORKTREE_SUPPORT.md) - Git worktree 并行开发
-- [Zsh 补全](./zsh-completion/README.md) - 智能命令补全插件
+### User Documentation
+- [Quick Start](./QUICKSTART.md) - 5-minute getting started guide
+- [Architecture Design](./docs/ARCHITECTURE.md) - Understand AgentBox's design philosophy
+- [Custom Images](./docs/CUSTOM_IMAGE.md) - Build your own Agent images
+- [Zsh Completion](./zsh-completion/README.md) - Smart command completion plugin
 
-### 开发者文档
-- [贡献指南](./CONTRIBUTING.md) - 如何参与项目开发
-- [变更日志](./CHANGELOG.md) - 版本更新记录
+### Developer Documentation
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute to the project
+- [Changelog](./CHANGELOG.md) - Version update history
 
-## 🎯 使用场景
+## 🎯 Use Cases
 
-### 场景 1: 日常开发
+### Scenario 1: Daily Development
 
 ```bash
 cd ~/projects/my-webapp
 ./gbox claude
-# Claude Code 启动，开始编码...
-# Ctrl+D 退出，容器可自动清理（默认保留）
+# Claude Code starts, begin coding...
+# Ctrl+D to exit, container can auto-cleanup (default: kept)
 ```
 
-### 场景 2: 多项目管理
+### Scenario 2: Multi-Project Management
 
 ```bash
-# 项目 A
+# Project A
 cd ~/projects/project-a
-./gbox claude    # 容器: gbox-claude-project-a
+./gbox claude    # Container: gbox-claude-project-a
 
-# 项目 B
+# Project B
 cd ~/projects/project-b
-./gbox claude    # 容器: gbox-claude-project-b
+./gbox claude    # Container: gbox-claude-project-b
 
-# 查看所有容器
+# View all containers
 ./gbox list
 ```
 
-### 场景 3: 远程控制
+### Scenario 3: Remote Control
 
 ```bash
 cd ~/projects/team-project
 ./gbox happy claude
-# 1. Happy daemon 启动
-# 2. Claude Code 启动
-# 3. 在手机上通过 Happy App 远程控制
+# 1. Happy daemon starts
+# 2. Claude Code starts
+# 3. Control remotely via Happy App on your phone
 ```
 
-### 场景 4: 自定义资源配置
+### Scenario 4: Custom Resource Configuration
 
 ```bash
-# 大型项目需要更多资源
+# Large project requiring more resources
 ./gbox claude --memory 16g --cpu 8
 
-# 需要访问容器内服务
+# Need to access services inside container
 ./gbox claude --ports "8000:8000;3000:3000"
 
-# 跨项目参考其他代码
+# Cross-project reference to other code
 ./gbox claude --ref-dirs "/path/to/reference-project"
 ```
 
-## 🔧 常用命令
+## 🔧 Common Commands
 
 ```bash
-# Agent 启动
-./gbox claude               # 启动 Claude Code
-./gbox happy claude         # 启动 Happy + Claude Code
-./gbox codex                # 启动 Codex
+# Agent startup
+./gbox claude               # Start Claude Code
+./gbox happy claude         # Start Happy + Claude Code
+./gbox codex                # Start Codex
 
-# 容器管理
-./gbox list                 # 查看运行中的容器
-./gbox status               # 查看所有容器状态
-./gbox stop <容器名>        # 停止容器
-./gbox logs <容器名>        # 查看容器日志
-./gbox shell <容器名>       # 登录容器 shell
+# Container management
+./gbox list                 # View running containers
+./gbox status               # View all container status
+./gbox stop <container-name>        # Stop container
+./gbox logs <container-name>        # View container logs
+./gbox shell <container-name>       # Login to container shell
 
-# 镜像管理
-./gbox build                # 构建镜像
-./gbox pull                 # 拉取预构建镜像
+# Image management
+./gbox build                # Build image
+./gbox pull                 # Pull pre-built image
 
-# OAuth 管理
-./gbox oauth claude status  # 查看账号状态
-./gbox oauth claude switch  # 切换账号
+# OAuth management
+./gbox oauth claude status  # Check account status
+./gbox oauth claude switch  # Switch account
 
-# MCP 服务器管理
-./gbox claude -- mcp list   # 列出已安装的 MCP 服务器
-./gbox claude -- mcp add <name> -s user -- <command>  # 添加 MCP 服务器
-./gbox claude -- mcp remove <name>  # 删除 MCP 服务器
+# MCP server management
+./gbox claude -- mcp list   # List installed MCP servers
+./gbox claude -- mcp add <name> -s user -- <command>  # Add MCP server
+./gbox claude -- mcp remove <name>  # Remove MCP server
 ```
 
-## 🧩 常用 MCP 服务
+## 🧩 Common MCP Services
 
-扩展 Claude Code 的能力，安装推荐的 MCP 服务器：
+Extend Claude Code's capabilities by installing recommended MCP servers:
 
 ```bash
-# Playwright - 浏览器自动化和网页截图
+# Playwright - Browser automation and web screenshots
 ./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 
-# Codex CLI - 安全的终端命令执行
+# Codex CLI - Safe terminal command execution
 ./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
 
-# Filesystem - 文件系统访问
+# Filesystem - File system access
 ./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
 
-# GitHub - GitHub 仓库操作
+# GitHub - GitHub repository operations
 ./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
 ```
 
-> 💡 安装后需要退出并重新进入会话生效。更多 MCP 服务器请查看 [快速入门](./QUICKSTART.md#3-mcp-服务器管理)
+> 💡 After installation, you need to exit and re-enter the session for changes to take effect. For more MCP servers, see [Quick Start Guide](./QUICKSTART.md#3-mcp-server-management)
 
-## ⚙️ 配置示例
+## ⚙️ Configuration Examples
 
-### 环境变量配置
+### Environment Variable Configuration
 
 ```bash
-# 设置默认资源限制
+# Set default resource limits
 export GBOX_MEMORY=8g
 export GBOX_CPU=4
 
-# 设置默认端口映射
+# Set default port mappings
 export GBOX_PORTS="8000:8000;3000:3000"
 
-# 启动时使用环境变量配置
+# Start using environment variable configuration
 ./gbox claude
 ```
 
-### 命令行参数
+### Command Line Parameters
 
 ```bash
-# 完整配置示例
+# Complete configuration example
 ./gbox claude \
   --memory 16g \
   --cpu 8 \
@@ -213,98 +211,98 @@ export GBOX_PORTS="8000:8000;3000:3000"
   -- --model sonnet
 ```
 
-## 🏗️ 架构概览
+## 🏗️ Architecture Overview
 
 ```
-宿主机                          容器
+Host Machine                    Container
 ~/.gbox/
-├── claude/         →     ~/.claude/           (Claude 配置共享)
-├── happy/          →     ~/.happy/            (Happy 配置共享)
-├── .gitconfig      →     ~/.gitconfig         (Git 配置)
-├── cache/          →     /tmp/.cache/         (依赖缓存)
-└── logs/           →     /var/log/gbox.log   (日志)
+├── claude/         →     ~/.claude/           (Claude config sharing)
+├── happy/          →     ~/.happy/            (Happy config sharing)
+├── .gitconfig      →     ~/.gitconfig         (Git config)
+├── cache/          →     /tmp/.cache/         (Dependency cache)
+└── logs/           →     /var/log/gbox.log   (Logs)
 
-~/projects/myapp/   →     ~/projects/myapp/   (工作目录)
+~/projects/myapp/   →     ~/projects/myapp/   (Working directory)
 ```
 
-容器命名规则:
+Container naming convention:
 ```bash
 ~/projects/my-webapp     → gbox-claude-my-webapp
 ~/code/backend-api       → gbox-happy-claude-backend-api
 ```
 
-详见 [架构设计文档](./docs/ARCHITECTURE.md)
+See [Architecture Design Documentation](./docs/ARCHITECTURE.md) for details
 
-## 🐛 故障排查
+## 🐛 Troubleshooting
 
-### 容器无法启动
+### Container Won't Start
 
 ```bash
-# 查看容器日志
-./gbox logs <容器名>
+# View container logs
+./gbox logs <container-name>
 
-# 检查 Docker 状态
+# Check Docker status
 docker ps -a | grep gbox
 ```
 
-### OAuth 登录问题
+### OAuth Login Issues
 
 ```bash
-# 查看账号状态
+# Check account status
 ./gbox oauth claude status
 
-# 切换账号
+# Switch account
 ./gbox oauth claude switch
 ```
 
-### 端口冲突
+### Port Conflicts
 
 ```bash
-# 使用不同端口
+# Use different ports
 ./gbox claude --ports "8888:8000"
 ```
 
-### Playwright MCP 浏览器占用
+### Playwright MCP Browser Conflicts
 
 ```bash
-# 卸载并使用 --isolated 参数重新安装
+# Uninstall and reinstall with --isolated flag
 ./gbox claude -- mcp remove playwright
 ./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 ```
 
-更多问题请查看 [故障排查文档](./QUICKSTART.md#故障排查)
+For more issues, see [Troubleshooting Documentation](./QUICKSTART.md#troubleshooting)
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-参与贡献前请阅读 [贡献指南](./CONTRIBUTING.md)
+Please read the [Contributing Guide](./CONTRIBUTING.md) before contributing
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 [Apache License 2.0](./LICENSE) 许可证。
+This project is licensed under the [Apache License 2.0](./LICENSE).
 
-### 第三方组件
+### Third-Party Components
 
-本项目包含以下使用不同许可证的第三方组件：
+This project includes the following third-party components licensed under different terms:
 
-- **happy, happy-cli, happy-server** (vendor/ 目录)
-  - 许可证: MIT License
-  - 这些组件作为 Git 子模块引入，保持其原有 MIT 许可证
+- **happy, happy-cli, happy-server** (vendor/ directory)
+  - License: MIT License
+  - These components are included as Git submodules and retain their original MIT licenses
 
-详见 [NOTICE](./NOTICE) 文件了解完整的第三方组件信息。
+See the [NOTICE](./NOTICE) file for complete third-party component information.
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-- [Claude Code](https://claude.ai/code) - Anthropic 的 AI 编程助手
-- [Happy](https://happy.engineering) - 远程控制平台，随时随地在手机上控制电脑
-- [Docker](https://www.docker.com/) - 容器化平台
+- [Claude Code](https://claude.ai/code) - Anthropic's AI programming assistant
+- [Happy](https://happy.engineering) - Remote control platform for controlling your computer from your phone anywhere, anytime
+- [Docker](https://www.docker.com/) - Containerization platform
 
-## 📮 联系方式
+## 📮 Contact
 
 - Issues: [GitHub Issues](https://github.com/Gravtice/AgentBox/issues)
 - Discussions: [GitHub Discussions](https://github.com/Gravtice/AgentBox/discussions)
 
 ---
 
-**享受容器化的 AI Agent 开发体验！** 🚀
+**Enjoy the containerized AI Agent development experience!** 🚀

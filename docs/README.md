@@ -1,55 +1,53 @@
-# AgentBox 文档中心
+# AgentBox Documentation Hub
 
-AgentBox 的详细使用指南和技术文档。
+Comprehensive usage guides and technical documentation for AgentBox.
 
-## 📖 用户文档
+## 📖 User Documentation
 
-### 入门指南
-- [README.md](../README.md) - 项目概览和快速开始
-- [QUICKSTART.md](../QUICKSTART.md) - 5分钟快速入门指南
+### Getting Started
+- [README.md](../README.md) - Project overview and quick start
+- [QUICKSTART.md](../QUICKSTART.md) - 5-minute quick start guide
 
-### 核心文档
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - 架构设计和核心概念
-- [CUSTOM_IMAGE.md](./CUSTOM_IMAGE.md) - 自定义镜像制作指南
-- [RESOURCE_CONFIG.md](./RESOURCE_CONFIG.md) - 资源配置详细说明
+### Core Documentation
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture design and core concepts
+- [CUSTOM_IMAGE.md](./CUSTOM_IMAGE.md) - Custom image building guide
 
-### 高级功能
-- [WORKTREE_SUPPORT.md](./WORKTREE_SUPPORT.md) - Git Worktree 并行开发
-- [Zsh 补全](../zsh-completion/README.md) - 智能命令补全插件
+### Advanced Features
+- [Zsh Completion](../zsh-completion/README.md) - Intelligent command completion plugin
 
-## 👨‍💻 开发者文档
+## 👨‍💻 Developer Documentation
 
-### 贡献指南
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - 如何参与项目开发
-- [CHANGELOG.md](../CHANGELOG.md) - 版本更新记录
+### Contributing
+- [CONTRIBUTING.md](../CONTRIBUTING.md) - How to contribute to the project
+- [CHANGELOG.md](../CHANGELOG.md) - Version change log
 
-## 🤝 参与贡献
+## 🤝 Contributing
 
-欢迎贡献文档改进！
+Documentation improvements are welcome!
 
-- 发现文档错误或不清晰的地方
-- 有新的使用技巧想要分享
-- 想要补充更多示例
+- Found errors or unclear content
+- Have new tips or best practices to share
+- Want to add more examples
 
-请查看 [贡献指南](../CONTRIBUTING.md) 了解如何参与。
+Please refer to the [Contributing Guide](../CONTRIBUTING.md) to learn how to participate.
 
-## 💡 文档约定
+## 💡 Documentation Conventions
 
-### 文件命名
-- 大写 + 下划线: `CUSTOM_IMAGE.md`
-- 简洁清晰,见名知意
+### File Naming
+- Uppercase with underscores: `CUSTOM_IMAGE.md`
+- Concise and self-explanatory
 
-### 内容组织
-- 使用清晰的标题层级
-- 提供代码示例
-- 包含故障排查
-- 添加相关文档链接
+### Content Organization
+- Use clear heading hierarchy
+- Provide code examples
+- Include troubleshooting sections
+- Add links to related documentation
 
-### Markdown 风格
-- 使用 GitHub Flavored Markdown
-- 代码块指定语言
-- 使用 emoji 增强可读性 (适度)
+### Markdown Style
+- Use GitHub Flavored Markdown
+- Specify language for code blocks
+- Use emojis to enhance readability (in moderation)
 
 ---
 
-**文档持续更新中...** 📝
+**Documentation is continuously being updated...** 📝

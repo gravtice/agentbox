@@ -1,85 +1,85 @@
-# Customizing AgentBox Images
+# 自定义 AgentBox 镜像
 
-This document explains how to create custom images based on the AgentBox standard image, pre-installing project dependencies and tools.
+本文档介绍如何基于 AgentBox 标准镜像创建自定义镜像,预装项目所需的依赖和工具。
 
-## 🎯 Use Cases
+## 🎯 使用场景
 
-- **Unified Team Environment** - All members use the same development environment
-- **Pre-installed Project Dependencies** - Avoid installing dependencies on every startup
-- **Custom Tools** - Install commonly used tools and configurations for the team
-- **Specific Languages/Frameworks** - Optimize images for specific tech stacks
+- **团队统一环境** - 所有成员使用相同的开发环境
+- **预装项目依赖** - 避免每次启动都要安装依赖
+- **自定义工具** - 安装团队常用的工具和配置
+- **特定语言/框架** - 针对特定技术栈优化镜像
 
-## 📋 Prerequisites
+## 📋 前置要求
 
-- Docker installed
-- AgentBox standard image built or pulled
-- Basic Dockerfile knowledge
+- 已安装 Docker
+- 已构建或拉取 AgentBox 标准镜像
+- 基本的 Dockerfile 知识
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
-### 1. Create Dockerfile
+### 1. 创建 Dockerfile
 
-Create `Dockerfile.custom` in your project root:
+在项目根目录创建 `Dockerfile.custom`:
 
 ```dockerfile
-# Based on AgentBox standard image
+# 基于 AgentBox 标准镜像
 FROM gravtice/agentbox:latest
 
-# Switch to root user to install system packages
+# 切换到 root 用户安装系统包
 USER root
 
-# Install system dependencies
+# 安装系统依赖
 RUN apt-get update && apt-get install -y \
     vim \
     tmux \
     && rm -rf /var/lib/apt/lists/*
 
-# Switch back to guser
+# 切换回 guser 用户
 USER guser
 
-# Install Python dependencies
+# 安装 Python 依赖
 RUN pip install --no-cache-dir \
     django==4.2 \
     djangorestframework==3.14 \
     celery==5.3
 
-# Install Node.js dependencies
+# 安装 Node.js 依赖
 RUN npm install -g \
     typescript \
     @vue/cli \
     vite
 
-# Set working directory
+# 设置工作目录
 WORKDIR /home/guser
 ```
 
-### 2. Build Custom Image
+### 2. 构建自定义镜像
 
 ```bash
-# Build image
+# 构建镜像
 docker build -f Dockerfile.custom -t myproject/agentbox:1.0 .
 
-# View image
+# 查看镜像
 docker images | grep myproject
 ```
 
-### 3. Use Custom Image
+### 3. 使用自定义镜像
 
-Modify the image name in the `gbox` script:
+修改 `gbox` 脚本中的镜像名称:
 
 ```bash
-# Method 1: Directly modify lib/common.sh
+# 方式1: 直接修改 lib/common.sh
 DEFAULT_IMAGE_NAME="myproject/agentbox"
 DEFAULT_IMAGE_TAG="1.0"
 
-# Method 2: Use environment variable
+# 方式2: 使用环境变量
 export GBOX_IMAGE=myproject/agentbox:1.0
 ./gbox claude
 ```
 
-## 📝 Common Customization Examples
+## 📝 常用定制示例
 
-### Example 1: Python Web Project
+### 示例 1: Python Web 项目
 
 ```dockerfile
 FROM gravtice/agentbox:latest
@@ -104,7 +104,7 @@ RUN pip install --no-cache-dir \
 WORKDIR /home/guser
 ```
 
-### Example 2: Node.js Full-Stack Project
+### 示例 2: Node.js 全栈项目
 
 ```dockerfile
 FROM gravtice/agentbox:latest
@@ -124,13 +124,13 @@ RUN npm install -g \
     prisma \
     pm2
 
-# Configure npm mirror (optional, speeds up installation)
+# 配置 npm 镜像 (可选,加速安装)
 RUN npm config set registry https://registry.npmmirror.com
 
 WORKDIR /home/guser
 ```
 
-### Example 3: Rust Project
+### 示例 3: Rust 项目
 
 ```dockerfile
 FROM gravtice/agentbox:latest
@@ -144,11 +144,11 @@ RUN apt-get update && apt-get install -y \
 
 USER guser
 
-# Install Rust
+# 安装 Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/home/guser/.cargo/bin:${PATH}"
 
-# Install common Rust tools
+# 安装常用 Rust 工具
 RUN cargo install \
     cargo-watch \
     cargo-edit \
@@ -157,33 +157,33 @@ RUN cargo install \
 WORKDIR /home/guser
 ```
 
-### Example 4: Go Project
+### 示例 4: Go 项目
 
 ```dockerfile
 FROM gravtice/agentbox:latest
 
 USER root
 
-# Install Go
+# 安装 Go
 RUN wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz && \
     rm go1.21.5.linux-amd64.tar.gz
 
 USER guser
 
-# Configure Go environment variables
+# 配置 Go 环境变量
 ENV PATH="/usr/local/go/bin:/home/guser/go/bin:${PATH}"
 ENV GOPATH="/home/guser/go"
 ENV GOPROXY="https://goproxy.cn,direct"
 
-# Install common Go tools
+# 安装常用 Go 工具
 RUN go install golang.org/x/tools/gopls@latest && \
     go install github.com/go-delve/delve/cmd/dlv@latest
 
 WORKDIR /home/guser
 ```
 
-### Example 5: Data Science Project
+### 示例 5: 数据科学项目
 
 ```dockerfile
 FROM gravtice/agentbox:latest
@@ -195,7 +195,7 @@ RUN apt-get update && apt-get install -y \
 
 USER guser
 
-# Install common data science libraries
+# 安装数据科学常用库
 RUN pip install --no-cache-dir \
     numpy==1.24 \
     pandas==2.0 \
@@ -207,31 +207,31 @@ RUN pip install --no-cache-dir \
 WORKDIR /home/guser
 ```
 
-## 🔧 Advanced Customization
+## 🔧 高级定制
 
-### 1. Multi-Stage Build
+### 1. 多阶段构建
 
-Optimize image size:
+优化镜像大小:
 
 ```dockerfile
-# Stage 1: Build dependencies
+# Stage 1: 构建依赖
 FROM gravtice/agentbox:latest AS builder
 
 USER guser
 WORKDIR /build
 
-# Copy dependency files
+# 复制依赖文件
 COPY requirements.txt .
 
-# Install dependencies
+# 安装依赖
 RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Stage 2: Final image
+# Stage 2: 最终镜像
 FROM gravtice/agentbox:latest
 
 USER guser
 
-# Copy only installed dependencies
+# 只复制已安装的依赖
 COPY --from=builder /home/guser/.local /home/guser/.local
 
 ENV PATH="/home/guser/.local/bin:${PATH}"
@@ -239,18 +239,18 @@ ENV PATH="/home/guser/.local/bin:${PATH}"
 WORKDIR /home/guser
 ```
 
-### 2. Add Custom Configurations
+### 2. 添加自定义配置
 
 ```dockerfile
 FROM gravtice/agentbox:latest
 
 USER guser
 
-# Copy custom configuration files
+# 复制自定义配置文件
 COPY --chown=guser:guser .vimrc /home/guser/
 COPY --chown=guser:guser .tmux.conf /home/guser/
 
-# Configure Git aliases
+# 配置 Git 别名
 RUN git config --global alias.st status && \
     git config --global alias.co checkout && \
     git config --global alias.br branch
@@ -258,14 +258,14 @@ RUN git config --global alias.st status && \
 WORKDIR /home/guser
 ```
 
-### 3. Pre-download Large Files
+### 3. 预下载大文件
 
 ```dockerfile
 FROM gravtice/agentbox:latest
 
 USER guser
 
-# Pre-download model files
+# 预下载模型文件
 RUN mkdir -p /home/guser/.cache/models && \
     wget -O /home/guser/.cache/models/model.bin \
     https://example.com/model.bin
@@ -273,14 +273,14 @@ RUN mkdir -p /home/guser/.cache/models && \
 WORKDIR /home/guser
 ```
 
-### 4. Set Environment Variables
+### 4. 设置环境变量
 
 ```dockerfile
 FROM gravtice/agentbox:latest
 
 USER guser
 
-# Set project-related environment variables
+# 设置项目相关环境变量
 ENV DJANGO_SETTINGS_MODULE=myproject.settings
 ENV DATABASE_URL=postgresql://localhost/mydb
 ENV REDIS_URL=redis://localhost:6379
@@ -288,77 +288,77 @@ ENV REDIS_URL=redis://localhost:6379
 WORKDIR /home/guser
 ```
 
-## 📦 Image Management
+## 📦 镜像管理
 
-### Build Different Versions
+### 构建不同版本
 
 ```bash
-# Development version
+# 开发版本
 docker build -f Dockerfile.custom -t myproject/agentbox:dev .
 
-# Production version
+# 生产版本
 docker build -f Dockerfile.custom -t myproject/agentbox:prod .
 
-# With version number
+# 带版本号
 docker build -f Dockerfile.custom -t myproject/agentbox:1.0.0 .
 ```
 
-### Push to Private Registry
+### 推送到私有仓库
 
 ```bash
-# Login to private registry
+# 登录私有仓库
 docker login registry.example.com
 
-# Tag
+# 打标签
 docker tag myproject/agentbox:1.0 registry.example.com/myproject/agentbox:1.0
 
-# Push
+# 推送
 docker push registry.example.com/myproject/agentbox:1.0
 ```
 
-### Team Usage
+### 团队使用
 
 ```bash
-# Team members pull image
+# 团队成员拉取镜像
 docker pull registry.example.com/myproject/agentbox:1.0
 
-# Configure gbox to use custom image
+# 配置 gbox 使用自定义镜像
 export GBOX_IMAGE=registry.example.com/myproject/agentbox:1.0
 ./gbox claude
 ```
 
-## 🎓 Best Practices
+## 🎓 最佳实践
 
-### 1. Layer Optimization
+### 1. 分层优化
 
 ```dockerfile
-# ✅ Good: Install infrequently changing dependencies first
+# ✅ 好: 先安装不常变化的依赖
 RUN apt-get update && apt-get install -y vim
-RUN pip install django  # Framework
-RUN pip install mylib   # Project dependencies (frequently changing)
+RUN pip install django  # 框架
+RUN pip install mylib   # 项目依赖 (常变化)
 
-# ❌ Bad: Install all dependencies at once (reinstalls everything on changes)
+# ❌ 差: 一次性安装所有依赖 (变化时重新安装全部)
 RUN apt-get update && apt-get install -y vim && \
     pip install django mylib
 ```
 
-### 2. Clean Up Cache
+### 2. 清理缓存
 
 ```dockerfile
-# ✅ Good: Clean up cache immediately
+# ✅ 好: 及时清理缓存
 RUN apt-get update && apt-get install -y vim \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir django
 
-# ❌ Bad: Don't clean up cache, large image size
+# ❌ 差: 不清理缓存,镜像体积大
 RUN apt-get update && apt-get install -y vim
 RUN pip install django
 ```
 
-### 3. Use .dockerignore
+### 3. 使用 .dockerignore
 
-Create a `.dockerignore` file:
+创建 `.dockerignore` 文件:
 
 ```
 # Git
@@ -379,81 +379,81 @@ npm-debug.log
 .vscode
 .idea
 
-# Other
+# 其他
 .DS_Store
 *.log
 ```
 
-### 4. Pin Versions
+### 4. 固定版本
 
 ```dockerfile
-# ✅ Good: Pin versions for reproducible builds
+# ✅ 好: 固定版本,可重现构建
 RUN pip install django==4.2.0
 
-# ❌ Bad: Unpinned versions may lead to inconsistent builds
+# ❌ 差: 不固定版本,可能每次构建不一致
 RUN pip install django
 ```
 
-### 5. Use Mirrors (for China)
+### 5. 使用国内镜像
 
 ```dockerfile
-# Python pip mirror
+# Python pip 镜像
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
-# npm mirror
+# npm 镜像
 RUN npm config set registry https://registry.npmmirror.com
 
-# apt mirror (Ubuntu)
+# apt 镜像 (Ubuntu)
 RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 ```
 
-## 🔍 Debugging Tips
+## 🔍 调试技巧
 
-### 1. Interactive Build
+### 1. 交互式构建
 
 ```bash
-# Build to specific stage
+# 构建到特定阶段
 docker build --target builder -t debug .
 
-# Run container for debugging
+# 运行容器进行调试
 docker run -it debug bash
 ```
 
-### 2. View Image History
+### 2. 查看镜像历史
 
 ```bash
-# View image build history
+# 查看镜像构建历史
 docker history myproject/agentbox:1.0
 
-# View size of each layer
+# 查看每层大小
 docker history --no-trunc myproject/agentbox:1.0
 ```
 
-### 3. Dive Tool
+### 3. Dive 工具
 
-Use [dive](https://github.com/wagoodman/dive) to analyze images:
+使用 [dive](https://github.com/wagoodman/dive) 分析镜像:
 
 ```bash
-# Install dive
+# 安装 dive
 brew install dive
 
-# Analyze image
+# 分析镜像
 dive myproject/agentbox:1.0
 ```
 
-## 📊 Example Project
+## 📊 示例项目
 
-Complete custom image example project structure:
+完整的自定义镜像示例项目结构:
 
 ```
 myproject/
-├── Dockerfile.custom       # Custom image
-├── .dockerignore           # Docker ignore file
-├── requirements.txt        # Python dependencies
-├── package.json            # Node.js dependencies
+├── Dockerfile.custom       # 自定义镜像
+├── .dockerignore           # Docker 忽略文件
+├── requirements.txt        # Python 依赖
+├── package.json            # Node.js 依赖
 └── scripts/
-    ├── build-image.sh      # Build script
-    └── push-image.sh       # Push script
+    ├── build-image.sh      # 构建脚本
+    └── push-image.sh       # 推送脚本
 ```
 
 **build-image.sh:**
@@ -492,40 +492,40 @@ docker push $REGISTRY/$IMAGE_NAME:$VERSION
 echo "Push complete!"
 ```
 
-## 🆘 Common Issues
+## 🆘 常见问题
 
-### Q: How to reduce image size?
-
-A:
-1. Use `--no-cache-dir` (pip)
-2. Clean up apt cache promptly
-3. Use multi-stage builds
-4. Merge RUN commands to reduce layers
-
-### Q: Build is very slow, what to do?
+### Q: 如何减小镜像体积？
 
 A:
-1. Use mirror sources (e.g., China mirrors)
-2. Leverage Docker layer caching
-3. Optimize Dockerfile order
+1. 使用 `--no-cache-dir` (pip)
+2. 及时清理 apt 缓存
+3. 使用多阶段构建
+4. 合并 RUN 命令减少层数
 
-### Q: How to preserve AgentBox functionality in custom images?
+### Q: 构建很慢怎么办？
 
-A: As long as you base on `gravtice/agentbox:latest`, all functionality is preserved. Don't modify:
-- User `guser`
-- Working directory `/home/guser`
-- Environment variables (unless you explicitly know the impact)
+A:
+1. 使用国内镜像源
+2. 利用 Docker 层缓存
+3. 优化 Dockerfile 顺序
 
-### Q: Can I use a different base image?
+### Q: 如何在自定义镜像中保留 AgentBox 功能？
 
-A: Not recommended. The AgentBox image includes pre-configured Claude Code, Happy, and other tools. If you need a completely different base, it's recommended to refer to AgentBox's Dockerfile and rebuild from scratch.
+A: 只要基于 `gravtice/agentbox:latest`,所有功能都会保留。不要修改:
+- 用户 `guser`
+- 工作目录 `/home/guser`
+- 环境变量 (除非明确知道影响)
 
-## 📚 References
+### Q: 可以使用不同的基础镜像吗？
 
-- [Dockerfile Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
-- [AgentBox Build Guide](./docs/dev/BUILD_GUIDE.md)
-- [Docker Multi-Stage Builds](https://docs.docker.com/build/building/multi-stage/)
+A: 不建议。AgentBox 镜像包含了预配置的 Claude Code、Happy 等工具。如果需要完全不同的基础,建议参考 AgentBox 的 Dockerfile 重新构建。
+
+## 📚 参考资料
+
+- [Dockerfile 最佳实践](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
+- [AgentBox 构建指南](./dev/BUILD_GUIDE.md)
+- [Docker 多阶段构建](https://docs.docker.com/build/building/multi-stage/)
 
 ---
 
-**Enjoy your customized development environment!** 🎨
+**享受定制化的开发环境！** 🎨

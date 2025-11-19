@@ -1,428 +1,428 @@
-# AgentBox 架构设计
+# AgentBox Architecture Design
 
-本文档介绍 AgentBox 的核心设计理念和技术架构。
+This document introduces the core design philosophy and technical architecture of AgentBox.
 
-## 🎯 设计目标
+## 🎯 Design Goals
 
-1. **简单易用** - 一个命令启动,自动管理容器生命周期
-2. **配置共享** - 所有容器共享 OAuth 登录态和配置
-3. **资源隔离** - 每个项目独立容器,互不影响
-4. **灵活扩展** - 支持多种 AI Agent 和运行模式
+1. **Simple and Easy to Use** - Start with a single command, automatic container lifecycle management
+2. **Shared Configuration** - All containers share OAuth sessions and configurations
+3. **Resource Isolation** - Each project runs in its own container, no interference
+4. **Flexible Extension** - Support for multiple AI Agents and runtime modes
 
-## 📐 核心概念
+## 📐 Core Concepts
 
-### 工作目录驱动
+### Working Directory-Driven
 
-AgentBox 的核心思想是"工作目录驱动":
+The core philosophy of AgentBox is "working directory-driven":
 
 ```
-工作目录 → 自动生成容器名 → 自动管理容器
+Working Directory → Auto-generate Container Name → Auto-manage Container
 ```
 
-**示例:**
+**Examples:**
 ```bash
 ~/projects/my-webapp  → gbox-claude-my-webapp
 ~/code/api-service    → gbox-claude-api-service
 ```
 
-**优势:**
-- 无需手动指定容器名
-- 多项目自然隔离
-- 容器名可预测
+**Advantages:**
+- No need to manually specify container names
+- Natural isolation between multiple projects
+- Predictable container names
 
-### 配置共享机制
+### Configuration Sharing Mechanism
 
-所有容器共享 `~/.gbox/` 目录下的配置:
+All containers share configurations under the `~/.gbox/` directory:
 
 ```
 ~/.gbox/
-├── claude/           # Claude Code 配置 (共享)
-├── happy/            # Happy 配置 (共享)
-├── .gitconfig        # Git 配置 (共享,只读)
-├── cache/            # 依赖缓存 (共享)
-└── containers.json   # 容器映射状态
+├── claude/           # Claude Code config (shared)
+├── happy/            # Happy config (shared)
+├── .gitconfig        # Git config (shared, read-only)
+├── cache/            # Dependency caches (shared)
+└── containers.json   # Container mapping state
 ```
 
-**共享内容:**
-- OAuth 登录态 (`claude/.claude.json`)
-- MCP 服务器配置
-- Git 用户信息
-- 依赖缓存 (pip, npm, uv)
+**Shared content:**
+- OAuth sessions (`claude/.claude.json`)
+- MCP server configurations
+- Git user information
+- Dependency caches (pip, npm, uv)
 
-**独立内容:**
-- 工作目录 (项目代码)
-- 容器运行时状态
-- 临时文件
+**Independent content:**
+- Working directory (project code)
+- Container runtime state
+- Temporary files
 
-## 🏗️ 架构分层
+## 🏗️ Architecture Layers
 
-### 1. 用户层
+### 1. User Layer
 
 ```
-用户命令
+User Commands
    ↓
 ./gbox claude
 ./gbox happy claude
 ./gbox codex
 ```
 
-**职责:**
-- 提供简洁的 CLI 接口
-- 参数解析和验证
-- 用户友好的提示
+**Responsibilities:**
+- Provide simple CLI interface
+- Parameter parsing and validation
+- User-friendly prompts
 
-### 2. 容器管理层
+### 2. Container Management Layer
 
-**lib/container.sh** - 容器生命周期管理
+**lib/container.sh** - Container lifecycle management
 
-主要函数:
-- `start_container()` - 创建/启动容器
-- `stop_container()` - 停止/删除容器
-- `generate_container_name()` - 生成容器名
-- `get_main_repo_dir()` - Git worktree 支持
+Main functions:
+- `start_container()` - Create/start container
+- `stop_container()` - Stop/delete container
+- `generate_container_name()` - Generate container name
+- `get_main_repo_dir()` - Git worktree support
 
-**lib/docker.sh** - Docker 基础操作
+**lib/docker.sh** - Docker basic operations
 
-主要函数:
-- `ensure_docker_network()` - 确保网络存在
-- `is_container_running()` - 检查容器状态
-- `get_worktree_dir()` - Worktree 目录管理
+Main functions:
+- `ensure_docker_network()` - Ensure network exists
+- `is_container_running()` - Check container status
+- `get_worktree_dir()` - Worktree directory management
 
-### 3. Agent 会话层
+### 3. Agent Session Layer
 
-**lib/agent.sh** - AI Agent 会话管理
+**lib/agent.sh** - AI Agent session management
 
-主要函数:
-- `run_agent_session()` - 启动 Agent 会话
-- 支持 本地模式 / Happy 远程模式
-- 参数透传给 Agent
+Main functions:
+- `run_agent_session()` - Start Agent session
+- Support for local mode / Happy remote mode
+- Parameter pass-through to Agent
 
-### 4. 配置管理层
+### 4. Configuration Management Layer
 
-**lib/state.sh** - 状态和配置管理
+**lib/state.sh** - State and configuration management
 
-主要函数:
-- `init_gbox_config()` - 初始化配置目录
-- `init_git_config()` - 初始化 Git 配置
-- `add_container_mapping()` - 容器映射管理
-- `remove_container_mapping()` - 清理映射
+Main functions:
+- `init_gbox_config()` - Initialize config directories
+- `init_git_config()` - Initialize Git config
+- `add_container_mapping()` - Container mapping management
+- `remove_container_mapping()` - Clean up mappings
 
-**lib/oauth.sh** - OAuth 账号管理
+**lib/oauth.sh** - OAuth account management
 
-主要函数:
-- `scan_oauth_accounts()` - 扫描所有账号
-- `switch_oauth_account()` - 切换账号
-- `check_token_expiry()` - 检查 Token 过期
+Main functions:
+- `scan_oauth_accounts()` - Scan all accounts
+- `switch_oauth_account()` - Switch accounts
+- `check_token_expiry()` - Check token expiration
 
-### 5. 镜像管理层
+### 5. Image Management Layer
 
-**lib/image.sh** - 镜像构建和管理
+**lib/image.sh** - Image build and management
 
-主要函数:
-- `build_image()` - 构建镜像
-- `pull_image()` - 拉取镜像
-- `push_image()` - 推送镜像
+Main functions:
+- `build_image()` - Build image
+- `pull_image()` - Pull image
+- `push_image()` - Push image
 
-## 🔄 启动流程
+## 🔄 Startup Flow
 
-### 本地模式 (`./gbox claude`)
+### Local Mode (`./gbox claude`)
 
 ```
-1. 解析参数
+1. Parse parameters
    ↓
-2. 检查 Docker 环境
+2. Check Docker environment
    ↓
-3. 初始化配置 (~/.gbox/)
+3. Initialize config (~/.gbox/)
    ↓
-4. 生成容器名 (gbox-claude-{dir})
+4. Generate container name (gbox-claude-{dir})
    ↓
-5. 检查容器是否存在
-   ├─ 存在: 连接到已有容器
-   └─ 不存在: 创建新容器
+5. Check if container exists
+   ├─ Exists: Connect to existing container
+   └─ Not exists: Create new container
       ↓
-6. 挂载目录
-   - 工作目录: ~/projects/myapp
-   - 配置目录: ~/.gbox/claude → ~/.claude
-   - Git 配置: ~/.gbox/.gitconfig → ~/.gitconfig
-   - 缓存目录: ~/.gbox/cache → /tmp/.cache
+6. Mount directories
+   - Work directory: ~/projects/myapp
+   - Config directory: ~/.gbox/claude → ~/.claude
+   - Git config: ~/.gbox/.gitconfig → ~/.gitconfig
+   - Cache directories: ~/.gbox/cache → /tmp/.cache
    ↓
-7. 启动 Claude Code
+7. Start Claude Code
    ↓
-8. 用户交互
+8. User interaction
    ↓
-9. 退出时清理容器 (默认)
+9. Clean up container on exit (default)
 ```
 
-### Happy 远程模式 (`./gbox happy claude`)
+### Happy Remote Mode (`./gbox happy claude`)
 
 ```
-1-6. 同本地模式
+1-6. Same as local mode
    ↓
-7. 启动 Happy Daemon
+7. Start Happy Daemon
    ↓
-8. 启动 Claude Code (Happy 管理)
+8. Start Claude Code (managed by Happy)
    ↓
-9. 手机端可连接
+9. Mobile app can connect
    ↓
-10. 用户交互
+10. User interaction
    ↓
-11. 退出时清理容器 (默认)
+11. Clean up container on exit (default)
 ```
 
-## 🌐 Happy 远程控制架构
+## 🌐 Happy Remote Control Architecture
 
-### 组件说明
+### Component Overview
 
-Happy 提供了完整的远程控制方案，让你可以在手机上随时随地控制电脑上的 AI Agent。
+Happy provides a complete remote control solution, allowing you to control AI Agents on your computer from anywhere using your mobile device.
 
-**三大组件**:
+**Three main components**:
 
 1. **happy-daemon** (`vendor/happy-cli`)
-   - 运行在容器内的守护进程
-   - 管理 Claude Code、Codex 等 Agent 的生命周期
-   - 处理终端 I/O 和命令执行
-   - 与 happy-server 保持连接
+   - Daemon process running inside the container
+   - Manages the lifecycle of Claude Code, Codex, and other Agents
+   - Handles terminal I/O and command execution
+   - Maintains connection with happy-server
 
 2. **happy-server** (`vendor/happy-server`)
-   - 云端中转服务器
-   - 建立 daemon 和 remote-app 之间的通信通道
-   - 处理认证和会话管理
-   - 支持多设备同时连接
+   - Cloud relay server
+   - Establishes communication channel between daemon and remote-app
+   - Handles authentication and session management
+   - Supports multiple simultaneous device connections
 
 3. **happy-remote-app** (`vendor/happy`)
-   - 移动端客户端（iOS/Android App）
-   - 提供终端界面和交互
-   - 支持实时查看和操作
-   - 多会话管理
+   - Mobile client (iOS/Android App)
+   - Provides terminal interface and interaction
+   - Supports real-time viewing and operation
+   - Multi-session management
 
-### 通信架构
+### Communication Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          宿主机                                   │
+│                          Host Machine                            │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    容器 (gbox-happy-claude-*)              │  │
+│  │                Container (gbox-happy-claude-*)             │  │
 │  │                                                            │  │
 │  │  ┌──────────────────┐         ┌────────────────────┐     │  │
 │  │  │  happy-daemon    │←───────→│   Claude Code      │     │  │
-│  │  │  (守护进程)       │  管理   │   (AI Agent)       │     │  │
+│  │  │  (Daemon)        │  Manage │   (AI Agent)       │     │  │
 │  │  │                  │         │                    │     │  │
-│  │  │  - 终端 I/O      │         │  - 代码分析        │     │  │
-│  │  │  - 命令执行      │         │  - 文件操作        │     │  │
-│  │  │  - 会话管理      │         │  - Git 操作        │     │  │
+│  │  │  - Terminal I/O  │         │  - Code Analysis   │     │  │
+│  │  │  - Cmd Exec      │         │  - File Ops        │     │  │
+│  │  │  - Session Mgmt  │         │  - Git Ops         │     │  │
 │  │  └────────┬─────────┘         └────────────────────┘     │  │
 │  │           │                                               │  │
 │  └───────────┼───────────────────────────────────────────────┘  │
 │              │ WebSocket / HTTPS                                │
 └──────────────┼──────────────────────────────────────────────────┘
                │
-               │ 互联网
+               │ Internet
                │
        ┌───────▼────────┐
        │  happy-server  │
-       │  (云端中转)     │
+       │  (Cloud Relay) │
        │                │
-       │  - 认证授权    │
-       │  - 消息路由    │
-       │  - 会话保持    │
+       │  - Auth        │
+       │  - Msg Routing │
+       │  - Session Mgmt│
        └───────┬────────┘
                │
                │ WebSocket / HTTPS
                │
      ┌─────────▼──────────┐
      │  happy-remote-app  │
-     │  (手机 App)         │
+     │  (Mobile App)      │
      │                    │
-     │  - 终端界面        │
-     │  - 命令输入        │
-     │  - 实时查看        │
-     │  - 多会话切换      │
+     │  - Terminal UI     │
+     │  - Cmd Input       │
+     │  - Real-time View  │
+     │  - Multi-session   │
      └────────────────────┘
 ```
 
-### 数据流向
+### Data Flow
 
-#### 1. 命令执行流程
-
-```
-手机端输入命令
-    ↓
-happy-remote-app 发送命令
-    ↓
-happy-server 路由消息
-    ↓
-happy-daemon 接收命令
-    ↓
-传递给 Claude Code
-    ↓
-Claude Code 执行
-    ↓
-返回结果给 happy-daemon
-    ↓
-happy-server 转发
-    ↓
-happy-remote-app 显示结果
-```
-
-#### 2. 会话初始化流程
+#### 1. Command Execution Flow
 
 ```
-容器启动
+Mobile app inputs command
     ↓
-happy-daemon 启动
+happy-remote-app sends command
     ↓
-读取 ~/.happy/ 配置 (OAuth token)
+happy-server routes message
     ↓
-连接到 happy-server
+happy-daemon receives command
     ↓
-认证成功，建立 WebSocket 连接
+Passes to Claude Code
     ↓
-启动 Claude Code
+Claude Code executes
     ↓
-等待 remote-app 连接
+Returns result to happy-daemon
     ↓
-remote-app 扫描二维码或输入配对码
+happy-server forwards
     ↓
-建立远程会话
-    ↓
-可以远程控制
+happy-remote-app displays result
 ```
 
-### 配置共享
+#### 2. Session Initialization Flow
 
-Happy 的配置同样使用共享机制:
+```
+Container starts
+    ↓
+happy-daemon starts
+    ↓
+Reads ~/.happy/ config (OAuth token)
+    ↓
+Connects to happy-server
+    ↓
+Authentication successful, establishes WebSocket connection
+    ↓
+Starts Claude Code
+    ↓
+Waits for remote-app connection
+    ↓
+remote-app scans QR code or enters pairing code
+    ↓
+Establishes remote session
+    ↓
+Remote control is ready
+```
+
+### Configuration Sharing
+
+Happy's configuration also uses the sharing mechanism:
 
 ```
 ~/.gbox/happy/
-├── config.json           # Happy daemon 配置
-├── .auth.json            # 认证 token
-└── sessions/             # 会话缓存
+├── config.json           # Happy daemon config
+├── .auth.json            # Authentication token
+└── sessions/             # Session cache
 ```
 
-所有容器共享同一个 Happy 账号，无需重复登录。
+All containers share the same Happy account, no need to login repeatedly.
 
-### 安全特性
+### Security Features
 
-1. **端到端加密**: 所有通信经过 TLS/SSL 加密
-2. **OAuth 认证**: 使用 OAuth 2.0 进行身份验证
-3. **会话隔离**: 每个项目独立会话，互不干扰
-4. **权限控制**: 通过 `HAPPY_AUTO_BYPASS_PERMISSIONS=1` 自动跳过权限检查（仅限受信环境）
+1. **End-to-End Encryption**: All communication encrypted via TLS/SSL
+2. **OAuth Authentication**: Uses OAuth 2.0 for identity verification
+3. **Session Isolation**: Each project has independent session, no interference
+4. **Permission Control**: Auto-bypass permission checks via `HAPPY_AUTO_BYPASS_PERMISSIONS=1` (trusted environments only)
 
-### 网络要求
+### Network Requirements
 
-- **出站连接**: 容器需要能够访问 happy-server (HTTPS/WebSocket)
-- **端口**: 不需要开放入站端口
-- **防火墙**: 允许容器访问外网
-- **代理支持**: 通过 `--proxy` 参数支持 HTTP/SOCKS5 代理
+- **Outbound Connection**: Container needs to access happy-server (HTTPS/WebSocket)
+- **Ports**: No inbound ports need to be opened
+- **Firewall**: Allow container to access internet
+- **Proxy Support**: HTTP/SOCKS5 proxy supported via `--proxy` parameter
 
-### 故障恢复
+### Failure Recovery
 
-Happy 提供了自动重连机制:
+Happy provides automatic reconnection mechanism:
 
 ```bash
-# 如果 happy-daemon 与 server 断开连接
-# 会自动尝试重连（指数退避）
+# If happy-daemon disconnects from server
+# It will automatically retry connection (exponential backoff)
 
-# 用户可以在 remote-app 上看到连接状态
-# 断开时显示 "连接中断"
-# 重连成功后自动恢复会话
+# Users can see connection status on remote-app
+# Shows "Connection Lost" when disconnected
+# Automatically resumes session when reconnected
 ```
 
-### 性能优化
+### Performance Optimization
 
-1. **增量传输**: 只传输变更的终端内容
-2. **压缩**: WebSocket 消息使用 gzip 压缩
-3. **心跳保活**: 定时心跳避免连接超时
-4. **本地缓存**: remote-app 缓存会话历史
+1. **Incremental Transmission**: Only transmits changed terminal content
+2. **Compression**: WebSocket messages use gzip compression
+3. **Heartbeat Keepalive**: Periodic heartbeat to avoid connection timeout
+4. **Local Cache**: remote-app caches session history
 
-## 📦 容器结构
+## 📦 Container Structure
 
-### 挂载点
+### Mount Points
 
 ```
-宿主机                            容器                         权限    说明
-~/.gbox/claude/         →  ~/.claude/                        rw    Claude 配置共享
-~/.gbox/happy/          →  ~/.happy/                         rw    Happy 配置共享
-~/.gbox/.gitconfig      →  ~/.gitconfig                      ro    Git 配置 (只读)
-~/projects/myapp/       →  ~/projects/myapp/                 rw    工作目录
-~/.gbox/cache/pip       →  /tmp/.cache/pip                   rw    pip 缓存
-~/.gbox/cache/npm       →  /tmp/.npm                         rw    npm 缓存
-~/.gbox/cache/uv        →  /tmp/.cache/uv                    rw    uv 缓存
-~/.gbox/logs/xxx.log    →  /var/log/gbox.log                 rw    容器日志
+Host                            Container                         Mode    Description
+~/.gbox/claude/         →  ~/.claude/                        rw      Claude config shared
+~/.gbox/happy/          →  ~/.happy/                         rw      Happy config shared
+~/.gbox/.gitconfig      →  ~/.gitconfig                      ro      Git config (read-only)
+~/projects/myapp/       →  ~/projects/myapp/                 rw      Working directory
+~/.gbox/cache/pip       →  /tmp/.cache/pip                   rw      pip cache
+~/.gbox/cache/npm       →  /tmp/.npm                         rw      npm cache
+~/.gbox/cache/uv        →  /tmp/.cache/uv                    rw      uv cache
+~/.gbox/logs/xxx.log    →  /var/log/gbox.log                 rw      Container logs
 ```
 
-### 符号链接
+### Symbolic Links
 
-Claude Code 期望配置文件在 `~/.claude.json`,但我们存储在 `~/.claude/.claude.json`:
+Claude Code expects config file at `~/.claude.json`, but we store it at `~/.claude/.claude.json`:
 
 ```bash
-# 容器启动时自动创建
+# Automatically created on container startup
 ~/.claude.json → ~/.claude/.claude.json
 ```
 
-### 环境变量
+### Environment Variables
 
-容器内注入的环境变量:
+Environment variables injected into the container:
 
 ```bash
-GBOX_WORK_DIR=/path/to/project        # 工作目录
-GBOX_MAIN_DIR=/path/to/main-repo      # 主仓库目录 (worktree 支持)
-GBOX_RUN_MODE=only-local              # 运行模式
-ANTHROPIC_API_KEY=xxx                 # API Key (可选)
-HAPPY_AUTO_BYPASS_PERMISSIONS=1       # 自动跳过权限检查
-DEBUG=                                # 调试日志 (用户可控)
+GBOX_WORK_DIR=/path/to/project        # Working directory
+GBOX_MAIN_DIR=/path/to/main-repo      # Main repository (worktree support)
+GBOX_RUN_MODE=only-local              # Run mode
+ANTHROPIC_API_KEY=xxx                 # API Key (optional)
+HAPPY_AUTO_BYPASS_PERMISSIONS=1       # Auto-bypass permission checks
+DEBUG=                                # Debug logs (user-controlled)
 ```
 
-代理环境变量 (如果设置):
+Proxy environment variables (if configured):
 ```bash
 HTTP_PROXY=http://127.0.0.1:7890
 HTTPS_PROXY=http://127.0.0.1:7890
 ALL_PROXY=http://127.0.0.1:7890
-# 及对应的小写变量
+# Plus lowercase variants
 ```
 
-## 🔐 OAuth 管理
+## 🔐 OAuth Management
 
-### 文件结构
+### File Structure
 
 ```
 ~/.gbox/claude/
-├── .claude.json                        # 当前激活的账号
-├── .claude.json-user@example.com-001  # 账号备份 1
-├── .claude.json-other@example.com-001 # 账号备份 2
-├── .oauth-account-user@example.com-001.json   # 账号元数据 1
-└── .oauth-account-other@example.com-001.json  # 账号元数据 2
+├── .claude.json                        # Currently active account
+├── .claude.json-user@example.com-001  # Account backup 1
+├── .claude.json-other@example.com-001 # Account backup 2
+├── .oauth-account-user@example.com-001.json   # Account metadata 1
+└── .oauth-account-other@example.com-001.json  # Account metadata 2
 ```
 
-### 账号切换流程
+### Account Switching Flow
 
 ```
-1. 扫描 ~/.gbox/claude/ 下的所有账号
+1. Scan all accounts under ~/.gbox/claude/
    ↓
-2. 读取每个账号的元数据
+2. Read metadata for each account
    - Email
-   - Usage (已用次数)
-   - Limit (总限制)
-   - Reset Time (重置时间)
+   - Usage (used count)
+   - Limit (total limit)
+   - Reset Time (reset time)
    ↓
-3. 显示账号列表供用户选择
+3. Display account list for user selection
    ↓
-4. 备份当前账号
+4. Backup current account
    ↓
-5. 激活选中的账号 (复制为 .claude.json)
+5. Activate selected account (copy as .claude.json)
    ↓
-6. 提示重启容器生效
+6. Prompt to restart container for changes to take effect
 ```
 
-### 自动切换 (Keepalive)
+### Auto-Switching (Keepalive)
 
-当检测到账号达到限制时,自动切换到可用账号:
+When account limit is detected, automatically switch to available account:
 
 ```bash
-# 启动 keepalive 监控
+# Start keepalive monitoring
 ./gbox keepalive start
 
-# 自动切换逻辑
+# Auto-switch logic
 while true; do
   if account_limit_reached; then
     switch_to_available_account
@@ -432,123 +432,121 @@ while true; do
 done
 ```
 
-## 🌐 网络和端口
+## 🌐 Network and Ports
 
-### Docker 网络
+### Docker Network
 
-所有容器连接到 `gbox-network` (bridge 模式):
+All containers connect to `gbox-network` (bridge mode):
 
 ```bash
 docker network create gbox-network
 ```
 
-**优势:**
-- 容器间可以通过容器名通信
-- 隔离于宿主机其他容器
-- 支持自定义 DNS 解析
+**Advantages:**
+- Containers can communicate via container names
+- Isolated from other host containers
+- Support for custom DNS resolution
 
-### 端口映射
+### Port Mapping
 
-**默认行为:** 不映射任何端口
+**Default behavior:** No port mapping
 
-**自定义映射:**
+**Custom mapping:**
 ```bash
 GBOX_PORTS="8000:8000;3000:3000"
 ```
 
-**绑定地址:** 所有端口绑定到 `127.0.0.1` (仅本地访问)
+**Bind address:** All ports bound to `127.0.0.1` (localhost only)
 
 ```bash
 -p 127.0.0.1:8000:8000
 -p 127.0.0.1:3000:3000
 ```
 
-## 🔧 Git Worktree 支持
+## 🔧 Git Worktree Support
 
-### 目录规范
+### Directory Convention
 
 ```
-/path/to/project/                # 主仓库
-/path/to/project-worktrees/      # Worktrees 目录
+/path/to/project/                # Main repository
+/path/to/project-worktrees/      # Worktrees directory
   ├── feature-a/                 # Worktree 1
   └── feature-b/                 # Worktree 2
 ```
 
-### 检测逻辑
+### Detection Logic
 
 ```bash
-# 1. Git 命令检测
+# 1. Git command detection
 git rev-parse --git-common-dir
 
-# 2. 目录命名推断
+# 2. Directory naming inference
 if [[ "$parent_dir" == *"-worktrees" ]]; then
   main_dir="${parent_dir%-worktrees}"
 fi
 ```
 
-### 挂载策略
+### Mount Strategy
 
 ```bash
-# 同时挂载主目录和 worktrees 目录
+# Mount both main directory and worktrees directory
 -v /path/to/project:/path/to/project
 -v /path/to/project-worktrees:/path/to/project-worktrees
 ```
 
-**优势:**
-- Worktree 可以访问主仓库 .git
-- 容器内可以自由切换 worktree
-- 多个 worktree 使用同一个容器
+**Advantages:**
+- Worktree can access main repository .git
+- Free switching between worktrees inside container
+- Multiple worktrees use the same container
 
-详见 [Worktree 支持文档](./docs/WORKTREE_SUPPORT.md)
+## 📊 Resource Management
 
-## 📊 资源管理
-
-### 默认限制
+### Default Limits
 
 ```bash
---memory 4g              # 内存限制
---cpus 2                 # CPU 核心数
+--memory 4g              # Memory limit
+--cpus 2                 # CPU cores
 ```
 
-### 缓存目录
+### Cache Directories
 
-依赖缓存大幅加速安装:
+Dependency caches significantly speed up installation:
 
 ```
 ~/.gbox/cache/
-├── pip/       # Python pip 缓存
-├── npm/       # Node.js npm 缓存
-└── uv/        # Python uv 缓存
+├── pip/       # Python pip cache
+├── npm/       # Node.js npm cache
+└── uv/        # Python uv cache
 ```
 
-**挂载到容器:**
+**Mounted to container:**
 ```bash
 -v ~/.gbox/cache/pip:/tmp/.cache/pip
 -v ~/.gbox/cache/npm:/tmp/.npm
 -v ~/.gbox/cache/uv:/tmp/.cache/uv
 ```
 
-## 🎨 模块化设计
+## 🎨 Modular Design
 
-### 模块职责
+### Module Responsibilities
 
-| 模块 | 文件 | 行数 | 职责 |
+| Module | File | Lines | Responsibility |
 |------|------|------|------|
-| 通用工具 | lib/common.sh | 313 | 常量、颜色、帮助文档 |
-| 状态管理 | lib/state.sh | 191 | 配置初始化、容器映射 |
-| Docker 操作 | lib/docker.sh | 74 | 网络、容器状态检查 |
-| 容器管理 | lib/container.sh | 655 | 容器生命周期 |
-| Agent 会话 | lib/agent.sh | 365 | Agent 启动和参数 |
-| 镜像管理 | lib/image.sh | 173 | 镜像构建、拉取 |
-| OAuth 管理 | lib/oauth.sh | 659 | 账号切换、Token 检查 |
-| Keepalive | lib/keepalive.sh | 822 | 自动维持登录态 |
+| Common Utils | lib/common.sh | 313 | Constants, colors, help docs |
+| State Mgmt | lib/state.sh | 191 | Config init, container mapping |
+| Docker Ops | lib/docker.sh | 74 | Network, container status check |
+| Container Mgmt | lib/container.sh | 655 | Container lifecycle |
+| Agent Session | lib/agent.sh | 365 | Agent startup and params |
+| Image Mgmt | lib/image.sh | 173 | Image build, pull |
+| OAuth Mgmt | lib/oauth.sh | 659 | Account switching, token check |
+| Keepalive | lib/keepalive.sh | 822 | Auto-maintain login sessions |
 
-### 模块依赖
+### Module Dependencies
 
 ```
-gbox (主脚本 238 行)
+gbox (Main script 238 lines)
  │
- ├─ common.sh          (无依赖)
+ ├─ common.sh          (no dependencies)
  ├─ state.sh           (→ common)
  ├─ docker.sh          (→ common, state)
  ├─ container.sh       (→ docker, state, common)
@@ -558,122 +556,120 @@ gbox (主脚本 238 行)
  └─ keepalive.sh       (→ oauth, container, docker)
 ```
 
-详见 [项目结构文档](./docs/dev/PROJECT_STRUCTURE.md)
+See [Project Structure Documentation](./dev/PROJECT_STRUCTURE.md) for details
 
-## 🚀 性能优化
+## 🚀 Performance Optimization
 
-### 1. 依赖缓存
+### 1. Dependency Caching
 
-所有容器共享依赖缓存,避免重复下载:
+All containers share dependency caches, avoiding redundant downloads:
 
 ```bash
-# 首次安装: 从网络下载
-pip install numpy  # 下载 + 缓存
+# First installation: Download from network
+pip install numpy  # Download + cache
 
-# 后续安装: 从缓存读取
-pip install numpy  # 秒级完成
+# Subsequent installations: Read from cache
+pip install numpy  # Completes in seconds
 ```
 
-### 2. 镜像分层
+### 2. Image Layering
 
-使用 Multi-stage 构建,优化镜像大小:
+Uses multi-stage build to optimize image size:
 
 ```dockerfile
-# Stage 1: 构建 happy-cli
+# Stage 1: Build happy-cli
 FROM node:20-slim AS happy-builder
 ...
 
-# Stage 2: 最终镜像 (不包含构建依赖)
+# Stage 2: Final image (excludes build dependencies)
 FROM python:3.12-slim
 COPY --from=happy-builder /build/happy-coder-*.tgz /tmp/
 ...
 ```
 
-### 3. 配置文件共享
+### 3. Configuration File Sharing
 
-所有容器共享配置,避免重复存储:
+All containers share configuration, avoiding redundant storage:
 
 ```bash
-# 单个 OAuth 配置文件
-~/.gbox/claude/.claude.json  # 所有容器共享
+# Single OAuth config file
+~/.gbox/claude/.claude.json  # Shared by all containers
 ```
 
-## 🔒 安全设计
+## 🔒 Security Design
 
-### 1. 容器隔离
+### 1. Container Isolation
 
-- 每个项目独立容器
-- 使用非 root 用户 (guser)
-- 限制内存和 CPU
+- Each project has independent container
+- Uses non-root user (guser)
+- Memory and CPU limits
 
-### 2. 端口绑定
+### 2. Port Binding
 
-- 默认不映射端口
-- 需要时绑定到 127.0.0.1 (仅本地访问)
+- No port mapping by default
+- When needed, bind to 127.0.0.1 (localhost only)
 
-### 3. 参考目录只读
+### 3. Read-Only Reference Directories
 
 ```bash
-# 挂载参考目录为只读,防止误修改
+# Mount reference directories as read-only to prevent accidental modification
 -v /path/to/ref:ro
 ```
 
-### 4. Git 配置只读
+### 4. Read-Only Git Config
 
 ```bash
-# Git 配置只读挂载
+# Git config mounted as read-only
 -v ~/.gbox/.gitconfig:~/.gitconfig:ro
 ```
 
-## 📈 扩展性
+## 📈 Extensibility
 
-### 1. 支持新 Agent
+### 1. Support for New Agents
 
-添加新 Agent 只需:
+Adding a new Agent only requires:
 
 ```bash
-# lib/agent.sh 中添加
+# Add in lib/agent.sh
 case "$agent" in
   claude|codex|gemini)
     ...
   ;;
-  new-agent)  # 新增
+  new-agent)  # New addition
     ...
   ;;
 esac
 ```
 
-### 2. 自定义镜像
+### 2. Custom Images
 
-用户可以基于标准镜像创建自定义镜像:
+Users can create custom images based on the standard image:
 
 ```dockerfile
 FROM gravtice/agentbox:latest
 
-# 安装自定义工具
+# Install custom tools
 RUN apt-get update && apt-get install -y xxx
 
-# 安装自定义依赖
+# Install custom dependencies
 RUN pip install xxx
 ```
 
-详见 [自定义镜像文档](./CUSTOM_IMAGE.md)
+See [Custom Image Documentation](../CUSTOM_IMAGE.md) for details
 
-### 3. 插件化 MCP 服务器
+### 3. Pluggable MCP Servers
 
-通过 MCP 配置扩展功能:
+Extend functionality through MCP configuration:
 
 ```bash
 ./gbox claude -- mcp add -s user my-tool -- npx my-mcp-server
 ```
 
-## 📚 参考资料
+## 📚 References
 
-- [快速入门](./QUICKSTART.md) - 5分钟上手
-- [资源配置](./docs/RESOURCE_CONFIG.md) - 详细配置说明
-- [Worktree 支持](./docs/WORKTREE_SUPPORT.md) - Git worktree 文档
-- [开发者文档](./docs/dev/README.md) - 内部实现细节
+- [Quick Start](../QUICKSTART.md) - 5-minute getting started guide
+- [Developer Documentation](./dev/README.md) - Internal implementation details
 
 ---
 
-**设计原则**: 简单、可靠、灵活
+**Design Principles**: Simple, Reliable, Flexible

@@ -1,10 +1,10 @@
-# AgentBox 快速入门
+# AgentBox Quick Start
 
-5分钟快速上手 AgentBox！
+Get started with AgentBox in 5 minutes!
 
-## 📋 准备工作
+## 📋 Prerequisites
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 **macOS:**
 ```bash
@@ -16,54 +16,54 @@ brew install jq docker
 sudo apt-get install jq docker.io
 ```
 
-### 2. 克隆项目
+### 2. Clone the Repository
 
 ```bash
 git clone https://github.com/Gravtice/AgentBox.git
 cd AgentBox
 ```
 
-### 3. 构建镜像
+### 3. Build the Image
 
 ```bash
 ./gbox build
-# 等待 2-5 分钟完成构建
+# Wait 2-5 minutes for the build to complete
 ```
 
-## 🚀 第一次使用
+## 🚀 First-Time Use
 
-### 启动 Claude Code
+### Start Claude Code
 
 ```bash
 cd ~/projects/myproject
 ./gbox claude
 ```
 
-第一次启动时会:
-1. 自动创建配置目录 `~/.gbox/`
-2. 自动创建容器 `gbox-claude-myproject`
-3. 启动 Claude Code
-4. 提示完成 OAuth 登录
+On first launch, it will:
+1. Automatically create the configuration directory `~/.gbox/`
+2. Automatically create container `gbox-claude-myproject`
+3. Start Claude Code
+4. Prompt you to complete OAuth login
 
-### 完成 OAuth 登录
+### Complete OAuth Login
 
-在 Claude Code 界面:
-1. 按提示打开浏览器
-2. 登录 Anthropic 账号
-3. 授权 Claude Code
-4. 回到终端,开始使用
+In the Claude Code interface:
+1. Follow the prompt to open your browser
+2. Log in to your Anthropic account
+3. Authorize Claude Code
+4. Return to the terminal and start using it
 
-> 💡 **提示**: OAuth 登录只需一次,后续所有容器都会自动复用登录态
+> 💡 **Tip**: OAuth login is only required once. All subsequent containers will automatically reuse the login session.
 
-## 📚 基本使用
+## 📚 Basic Usage
 
-### 启动不同的 Agent
+### Start Different Agents
 
 ```bash
-# Claude Code (本地模式)
+# Claude Code (local mode)
 ./gbox claude
 
-# Happy + Claude Code (远程控制)
+# Happy + Claude Code (remote control)
 ./gbox happy claude
 
 # Codex
@@ -73,81 +73,81 @@ cd ~/projects/myproject
 ./gbox gemini
 ```
 
-### 查看运行中的容器
+### View Running Containers
 
 ```bash
 ./gbox list
 ```
 
-输出示例:
+Example output:
 ```
-运行中的 gbox 容器:
-容器名                    工作目录              镜像
-gbox-claude-myproject   ~/projects/myproject  agentbox:1.0.1
+Running gbox containers:
+Container Name            Working Directory        Image
+gbox-claude-myproject    ~/projects/myproject     agentbox:1.0.1
 ```
 
-### 停止容器
+### Stop Containers
 
 ```bash
-# 停止指定容器
+# Stop a specific container
 ./gbox stop gbox-claude-myproject
 
-# 停止所有容器
+# Stop all containers
 ./gbox stop-all
 ```
 
-### 查看容器日志
+### View Container Logs
 
 ```bash
 ./gbox logs gbox-claude-myproject
 ```
 
-### 登录容器调试
+### Login to Container for Debugging
 
 ```bash
 ./gbox shell gbox-claude-myproject
 ```
 
-## ⚙️ 常用配置
+## ⚙️ Common Configurations
 
-### 调整资源限制
+### Adjust Resource Limits
 
 ```bash
-# 增加内存和 CPU
+# Increase memory and CPU
 ./gbox claude --memory 16g --cpu 8
 ```
 
-### 映射端口
+### Map Ports
 
 ```bash
-# 映射单个端口
+# Map a single port
 ./gbox claude --ports "8000:8000"
 
-# 映射多个端口
+# Map multiple ports
 ./gbox claude --ports "8000:8000;3000:3000;5432:5432"
 ```
 
-### 挂载参考目录
+### Mount Reference Directories
 
 ```bash
-# 挂载其他项目作为只读参考
+# Mount another project as read-only reference
 ./gbox claude --ref-dirs "/path/to/reference-project"
 
-# 挂载多个参考目录
+# Mount multiple reference directories
 ./gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
 ```
 
-### 使用代理
+### Use Proxy
 
 ```bash
-# HTTP 代理
+# HTTP proxy
 ./gbox claude --proxy "http://127.0.0.1:7890"
 
-# SOCKS5 代理
+# SOCKS5 proxy
 ./gbox claude --proxy "socks5://127.0.0.1:1080"
 ```
 
-### 组合使用
+### Combine Options
 
 ```bash
 ./gbox claude \
@@ -159,264 +159,261 @@ gbox-claude-myproject   ~/projects/myproject  agentbox:1.0.1
   -- --model sonnet
 ```
 
-## 🎯 使用技巧
+## 🎯 Tips and Tricks
 
-### 1. 多项目管理
+### 1. Multi-Project Management
 
-每个项目目录会自动创建独立的容器:
+Each project directory automatically creates an independent container:
 
 ```bash
-# 项目 A
+# Project A
 cd ~/projects/project-a
-./gbox claude    # 容器: gbox-claude-project-a
+./gbox claude    # Container: gbox-claude-project-a
 
-# 项目 B
+# Project B
 cd ~/projects/project-b
-./gbox claude    # 容器: gbox-claude-project-b
+./gbox claude    # Container: gbox-claude-project-b
 ```
 
-### 2. 配置文件编辑
+### 2. Configuration File Editing
 
-所有配置文件都在 `~/.gbox/` 目录下,可以直接编辑:
+All configuration files are under the `~/.gbox/` directory and can be edited directly:
 
 ```bash
-# 编辑 Claude 全局指令
+# Edit Claude global instructions
 code ~/.gbox/claude/CLAUDE.md
 
-# 编辑 Git 配置
+# Edit Git configuration
 vim ~/.gbox/.gitconfig
 
-# 查看 OAuth 配置
+# View OAuth configuration
 cat ~/.gbox/claude/.claude.json
 ```
 
-### 3. MCP 服务器管理
+### 3. MCP Server Management
 
-#### 常用 MCP 服务推荐
+#### Recommended MCP Servers
 
-AgentBox 支持所有标准的 MCP 服务器。以下是一些常用推荐：
+AgentBox supports all standard MCP servers. Here are some common recommendations:
 
-**Playwright (浏览器自动化)**
+**Playwright (Browser Automation)**
 ```bash
-# 安装 Playwright MCP - 支持浏览器自动化和网页截图
+# Install Playwright MCP - supports browser automation and webpage screenshots
 ./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 ```
 
-**Codex CLI (终端命令执行)**
+**Codex CLI (Terminal Command Execution)**
 ```bash
-# 安装 Codex CLI MCP - 支持安全的终端命令执行
+# Install Codex CLI MCP - supports secure terminal command execution
 ./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
 ```
 
-**Filesystem (文件系统访问)**
+**Filesystem (File System Access)**
 ```bash
-# 安装 Filesystem MCP - 支持读写文件系统
+# Install Filesystem MCP - supports reading and writing to the file system
 ./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
 ```
 
-**GitHub (GitHub API 访问)**
+**GitHub (GitHub API Access)**
 ```bash
-# 安装 GitHub MCP - 支持操作 GitHub 仓库、Issues、PR 等
+# Install GitHub MCP - supports operations on GitHub repositories, Issues, PRs, etc.
 ./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
 ```
 
-**基本操作**
+**Basic Operations**
 ```bash
-# 列出已安装的 MCP 服务器
+# List installed MCP servers
 ./gbox claude -- mcp list
 
-# 删除 MCP 服务器
-./gbox claude -- mcp remove <服务器名>
+# Remove an MCP server
+./gbox claude -- mcp remove <server-name>
 
-# 查看 MCP 服务器状态
+# View MCP server status
 cat ~/.gbox/claude/.claude.json
 ```
 
-> 💡 **提示**:
-> - 安装后需要退出并重新进入 Claude Code 会话才能生效
-> - Playwright 必须使用 `--isolated --no-sandbox` 参数避免浏览器冲突
-> - 更多 MCP 服务器请查看 [MCP 服务器目录](https://github.com/modelcontextprotocol/servers)
+> 💡 **Tips**:
+> - You need to exit and re-enter the Claude Code session for changes to take effect
+> - Playwright must use `--isolated --no-sandbox` parameters to avoid browser conflicts
+> - For more MCP servers, see the [MCP Server Directory](https://github.com/modelcontextprotocol/servers)
 
-### 4. OAuth 账号切换
+### 4. OAuth Account Switching
 
-当账号达到使用限制时:
+When your account reaches usage limits:
 
 ```bash
-# 查看当前账号状态
+# Check current account status
 ./gbox oauth claude status
 
-# 切换到其他账号
+# Switch to another account
 ./gbox oauth claude switch
 
-# 列出所有账号
+# List all accounts
 ./gbox oauth claude list
 ```
 
-### 5. Git Worktree 支持
+### 5. Git Worktree Support
 
-AgentBox 自动支持 Git Worktree:
+AgentBox automatically supports Git Worktrees:
 
 ```bash
-# 在主仓库创建 worktree
+# Create a worktree in the main repository
 cd ~/projects/myproject
 git worktree add ../myproject-worktrees/feature-a feature-a
 
-# 在 worktree 中启动 (使用同一个容器)
+# Start in the worktree (uses the same container)
 cd ../myproject-worktrees/feature-a
 ./gbox claude
 ```
 
-详见 [Worktree 支持文档](./docs/WORKTREE_SUPPORT.md)
+## 🐛 Troubleshooting
 
-## 🐛 故障排查
+### Issue 1: Container Fails to Start
 
-### 问题 1: 容器无法启动
+**Symptoms**: Container fails to start after running `./gbox claude`
 
-**症状**: 执行 `./gbox claude` 后容器无法启动
-
-**解决方法**:
+**Solution**:
 ```bash
-# 1. 检查 Docker 是否运行
+# 1. Check if Docker is running
 docker ps
 
-# 2. 查看容器日志
-./gbox logs <容器名>
+# 2. View container logs
+./gbox logs <container-name>
 
-# 3. 检查镜像是否存在
+# 3. Check if the image exists
 docker images | grep agentbox
 
-# 4. 重新构建镜像
+# 4. Rebuild the image
 ./gbox build
 ```
 
-### 问题 2: OAuth 登录失败
+### Issue 2: OAuth Login Failed
 
-**症状**: Claude Code 提示 OAuth 登录失败
+**Symptoms**: Claude Code reports OAuth login failure
 
-**解决方法**:
+**Solution**:
 ```bash
-# 1. 删除旧的 OAuth 配置
+# 1. Delete old OAuth configuration
 rm ~/.gbox/claude/.claude.json
 
-# 2. 重新启动容器
+# 2. Restart the container
 ./gbox claude
 
-# 3. 按提示重新登录
+# 3. Follow the prompt to log in again
 ```
 
-### 问题 3: 端口冲突
+### Issue 3: Port Conflict
 
-**症状**: 提示端口已被占用
+**Symptoms**: Error message indicating port is already in use
 
-**解决方法**:
+**Solution**:
 ```bash
-# 1. 查看占用端口的容器
+# 1. View containers occupying the port
 docker ps | grep gbox
 
-# 2. 停止占用端口的容器
-./gbox stop <容器名>
+# 2. Stop the container occupying the port
+./gbox stop <container-name>
 
-# 3. 或使用不同的端口
+# 3. Or use a different port
 ./gbox claude --ports "8888:8000"
 ```
 
-### 问题 4: 容器内无法访问网络
+### Issue 4: No Network Access Inside Container
 
-**症状**: Claude Code 无法联网
+**Symptoms**: Claude Code cannot access the network
 
-**解决方法**:
+**Solution**:
 ```bash
-# 1. 检查宿主机网络
+# 1. Check host network
 ping anthropic.com
 
-# 2. 如需代理,添加代理配置
+# 2. If proxy is needed, add proxy configuration
 ./gbox claude --proxy "http://127.0.0.1:7890"
 
-# 3. 登录容器调试
-./gbox shell <容器名>
+# 3. Login to container for debugging
+./gbox shell <container-name>
 ping anthropic.com
 ```
 
-### 问题 5: 依赖安装缓慢
+### Issue 5: Slow Dependency Installation
 
-**症状**: 每次启动都要重新安装依赖
+**Symptoms**: Dependencies need to be reinstalled every time
 
-**说明**: AgentBox 已自动启用依赖缓存,缓存目录:
-- `~/.gbox/cache/pip` - Python pip 缓存
-- `~/.gbox/cache/npm` - Node.js npm 缓存
-- `~/.gbox/cache/uv` - Python uv 缓存
+**Explanation**: AgentBox has dependency caching enabled automatically. Cache directories:
+- `~/.gbox/cache/pip` - Python pip cache
+- `~/.gbox/cache/npm` - Node.js npm cache
+- `~/.gbox/cache/uv` - Python uv cache
 
-如果仍然缓慢,可能是网络问题,考虑使用代理。
+If it's still slow, it may be a network issue. Consider using a proxy.
 
-### 问题 6: 配置文件丢失
+### Issue 6: Configuration Files Missing
 
-**症状**: 容器内看不到配置文件
+**Symptoms**: Cannot see configuration files inside the container
 
-**解决方法**:
+**Solution**:
 ```bash
-# 1. 检查配置目录是否存在
+# 1. Check if the configuration directory exists
 ls -la ~/.gbox/
 
-# 2. 如果不存在,重新启动容器会自动创建
+# 2. If it doesn't exist, restarting the container will create it automatically
 ./gbox claude
 
-# 3. 恢复备份配置 (如果有备份)
+# 3. Restore backup configuration (if you have a backup)
 tar -xzf gbox-backup-20241106.tar.gz -C ~
 ```
 
-### 问题 7: Playwright MCP 浏览器占用错误
+### Issue 7: Playwright MCP Browser Occupancy Error
 
-**症状**: Claude Code 提示 `Error: Browser is already in use for /usr/local/share/playwright/mcp-chrome-03e4594, use --isolated to run multiple instances of the same browser`
+**Symptoms**: Claude Code reports `Error: Browser is already in use for /usr/local/share/playwright/mcp-chrome-03e4594, use --isolated to run multiple instances of the same browser`
 
-**原因**: Playwright MCP 的浏览器实例已被占用,需要使用 `--isolated` 参数来运行独立实例
+**Cause**: The Playwright MCP browser instance is already in use. You need to use the `--isolated` parameter to run independent instances.
 
-**解决方法**:
+**Solution**:
 ```bash
-# 1. 先卸载 Playwright MCP
+# 1. First uninstall Playwright MCP
 ./gbox claude -- mcp remove playwright
 
-# 2. 使用带隔离参数重新安装
+# 2. Reinstall with isolation parameters
 ./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 
-# 3. 退出当前 Claude Code 会话 (Ctrl+D)，重新进入
+# 3. Exit the current Claude Code session (Ctrl+D) and re-enter
 ./gbox claude
 ```
 
-### 清理和重置
+### Clean and Reset
 
-如果遇到无法解决的问题,可以完全清理并重新开始:
+If you encounter unresolvable issues, you can completely clean up and start fresh:
 
 ```bash
-# 1. 停止所有容器
+# 1. Stop all containers
 ./gbox stop-all
 
-# 2. 删除配置 (会删除 OAuth 登录态,需重新登录)
+# 2. Delete configuration (this will delete OAuth login sessions, requiring re-login)
 rm -rf ~/.gbox
 
-# 3. 重新启动
+# 3. Restart
 ./gbox claude
 ```
 
-## 📚 进阶阅读
+## 📚 Further Reading
 
-- [架构设计](./docs/ARCHITECTURE.md) - 了解 AgentBox 的设计理念
-- [自定义镜像](./docs/CUSTOM_IMAGE.md) - 制作自己的 Agent 镜像
-- [资源配置](./docs/RESOURCE_CONFIG.md) - 详细的资源配置说明
+- [Architecture Design](./docs/ARCHITECTURE.md) - Understand AgentBox's design philosophy
+- [Custom Images](./docs/CUSTOM_IMAGE.md) - Create your own Agent images
 
-## 💡 最佳实践
+## 💡 Best Practices
 
-1. **首次使用**: 先用小项目测试,熟悉后再用于大项目
-2. **资源配置**: 根据项目大小调整内存和 CPU
-3. **定期备份**: 定期备份 `~/.gbox/` 目录下的重要配置
-4. **容器清理**: 定期运行 `./gbox clean` 清理停止的容器
-5. **日志查看**: 遇到问题先查看日志 `./gbox logs <容器名>`
+1. **First-time use**: Test with a small project first, then use on larger projects after getting familiar
+2. **Resource configuration**: Adjust memory and CPU based on project size
+3. **Regular backups**: Regularly back up important configurations in the `~/.gbox/` directory
+4. **Container cleanup**: Regularly run `./gbox clean` to clean up stopped containers
+5. **Log viewing**: When encountering issues, first check logs with `./gbox logs <container-name>`
 
-## 🤔 需要帮助？
+## 🤔 Need Help?
 
-- 查看完整文档: [README.md](./README.md)
-- 提交问题: [GitHub Issues](https://github.com/Gravtice/AgentBox/issues)
-- 参与讨论: [GitHub Discussions](https://github.com/Gravtice/AgentBox/discussions)
+- View complete documentation: [README.md](./README.md)
+- Submit issues: [GitHub Issues](https://github.com/Gravtice/AgentBox/issues)
+- Join discussions: [GitHub Discussions](https://github.com/Gravtice/AgentBox/discussions)
 
 ---
 
-**祝你使用愉快！** 🎉
+**Enjoy using AgentBox!** 🎉

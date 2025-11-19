@@ -1,142 +1,142 @@
-# 贡献指南
+# Contributing Guide
 
-感谢你考虑为 AgentBox 做出贡献！本文档将帮助你了解如何参与项目。
+Thank you for considering contributing to AgentBox! This document will help you understand how to participate in the project.
 
-## 📋 行为准则
+## 📋 Code of Conduct
 
-### 我们的承诺
+### Our Pledge
 
-为了营造开放和友好的环境,我们承诺:
+To foster an open and welcoming environment, we pledge to:
 
-- 使用友好和包容的语言
-- 尊重不同的观点和经验
-- 优雅地接受建设性批评
-- 关注对社区最有利的事情
-- 对其他社区成员表示同理心
+- Use welcoming and inclusive language
+- Respect differing viewpoints and experiences
+- Gracefully accept constructive criticism
+- Focus on what is best for the community
+- Show empathy towards other community members
 
-## 🤝 如何贡献
+## 🤝 How to Contribute
 
-### 报告 Bug
+### Reporting Bugs
 
-在提交 Bug 报告前,请先搜索现有的 [Issues](https://github.com/Gravtice/AgentBox/issues) 确认问题尚未被报告。
+Before submitting a bug report, please search existing [Issues](https://github.com/Gravtice/AgentBox/issues) to confirm the problem hasn't been reported yet.
 
-**优秀的 Bug 报告应包含:**
+**A good bug report should include:**
 
-1. **清晰的标题** - 简洁描述问题
-2. **复现步骤** - 详细的步骤说明
-3. **预期行为** - 你期望发生什么
-4. **实际行为** - 实际发生了什么
-5. **环境信息** - 操作系统、Docker 版本等
-6. **日志和截图** - 相关的错误日志或截图
+1. **Clear title** - Brief description of the issue
+2. **Steps to reproduce** - Detailed step-by-step instructions
+3. **Expected behavior** - What you expected to happen
+4. **Actual behavior** - What actually happened
+5. **Environment information** - OS, Docker version, etc.
+6. **Logs and screenshots** - Relevant error logs or screenshots
 
-**示例:**
+**Example:**
 
 ```markdown
-## Bug 描述
-容器启动时提示权限错误
+## Bug Description
+Permission error when starting container
 
-## 复现步骤
-1. 执行 `./gbox claude`
-2. 容器启动
-3. 提示 "Permission denied: /.claude.json"
+## Steps to Reproduce
+1. Run `./gbox claude`
+2. Container starts
+3. Error message appears: "Permission denied: /.claude.json"
 
-## 环境信息
+## Environment Information
 - OS: macOS 14.1
 - Docker: 24.0.6
 - AgentBox: v1.0.0
 
-## 错误日志
+## Error Logs
 ```
 Error: EACCES: permission denied, open '/.claude.json'
 ```
 ```
 
-### 提出功能建议
+### Suggesting Features
 
-我们欢迎新功能建议！
+We welcome new feature suggestions!
 
-**优秀的功能建议应包含:**
+**A good feature suggestion should include:**
 
-1. **功能描述** - 清晰描述建议的功能
-2. **使用场景** - 为什么需要这个功能
-3. **预期效果** - 如何实现和使用
-4. **替代方案** - 是否考虑过其他方案
+1. **Feature description** - Clear description of the proposed feature
+2. **Use case** - Why this feature is needed
+3. **Expected outcome** - How it would be implemented and used
+4. **Alternatives** - Whether other solutions were considered
 
-**示例:**
+**Example:**
 
 ```markdown
-## 功能建议
-支持 Docker Compose 项目
+## Feature Suggestion
+Support for Docker Compose projects
 
-## 使用场景
-很多项目使用 docker-compose.yml 定义多个服务,希望 gbox 能自动识别并启动这些服务。
+## Use Case
+Many projects use docker-compose.yml to define multiple services. Would like gbox to automatically detect and start these services.
 
-## 预期效果
-- 自动检测 docker-compose.yml
-- 启动所有定义的服务
-- 支持服务间网络通信
+## Expected Outcome
+- Automatically detect docker-compose.yml
+- Start all defined services
+- Support inter-service network communication
 
-## 替代方案
-手动启动 docker-compose,但不如集成方便
+## Alternatives
+Manually start docker-compose, but integration would be more convenient
 ```
 
-### 提交 Pull Request
+### Submitting Pull Requests
 
-#### 准备工作
+#### Preparation
 
-1. **Fork 仓库**
+1. **Fork the repository**
    ```bash
-   # 在 GitHub 上 Fork 仓库
-   # 然后克隆你的 Fork
+   # Fork the repository on GitHub
+   # Then clone your fork
    git clone https://github.com/YOUR_USERNAME/AgentBox.git
    cd AgentBox
    ```
 
-2. **创建分支**
+2. **Create a branch**
    ```bash
    git checkout -b feature/amazing-feature
    ```
 
-3. **配置上游仓库**
+3. **Configure upstream repository**
    ```bash
    git remote add upstream https://github.com/Gravtice/AgentBox.git
    ```
 
-#### 开发流程
+#### Development Workflow
 
-1. **保持同步**
+1. **Stay synchronized**
    ```bash
    git fetch upstream
    git rebase upstream/main
    ```
 
-2. **编写代码**
-   - 遵循项目代码风格
-   - 添加必要的注释
-   - 保持代码简洁
+2. **Write code**
+   - Follow project code style
+   - Add necessary comments
+   - Keep code clean and concise
 
-3. **测试**
+3. **Test**
    ```bash
-   # 测试基本功能
+   # Test basic functionality
    ./gbox claude
 
-   # 测试修改的功能
-   # ... 根据具体修改进行测试
+   # Test modified functionality
+   # ... Test according to specific changes
 
-   # 语法检查
+   # Syntax check
    bash -n gbox
    bash -n lib/*.sh
    ```
 
-4. **提交更改**
+4. **Commit changes**
    ```bash
    git add .
    git commit -m "feat: add amazing feature"
    ```
 
-#### 提交信息规范
+#### Commit Message Format
 
-使用 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 格式:
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```
 <type>(<scope>): <subject>
@@ -146,111 +146,112 @@ Error: EACCES: permission denied, open '/.claude.json'
 <footer>
 ```
 
-**Type 类型:**
-- `feat` - 新功能
-- `fix` - Bug 修复
-- `docs` - 文档更新
-- `style` - 代码格式 (不影响功能)
-- `refactor` - 重构 (不是新功能也不是修复)
-- `perf` - 性能优化
-- `test` - 测试相关
-- `chore` - 构建/工具相关
+**Type categories:**
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation update
+- `style` - Code formatting (doesn't affect functionality)
+- `refactor` - Code refactoring (not a feature or fix)
+- `perf` - Performance improvement
+- `test` - Testing related
+- `chore` - Build/tooling related
 
-**示例:**
+**Example:**
 
 ```
-feat(oauth): 支持自动切换 OAuth 账号
+feat(oauth): add automatic OAuth account switching
 
-添加账号达到限制时自动切换到其他可用账号的功能。
+Add functionality to automatically switch to other available accounts
+when current account reaches usage limits.
 
-- 扫描所有可用账号
-- 检测当前账号使用情况
-- 自动切换到可用账号
-- 更新 .claude.json 配置
+- Scan all available accounts
+- Check current account status
+- Automatically switch to available account
+- Update .claude.json config
 
 Closes #123
 ```
 
-#### 创建 Pull Request
+#### Creating a Pull Request
 
-1. **推送分支**
+1. **Push branch**
    ```bash
    git push origin feature/amazing-feature
    ```
 
-2. **创建 PR**
-   - 访问 GitHub 仓库
-   - 点击 "New Pull Request"
-   - 选择你的分支
-   - 填写 PR 描述
+2. **Create PR**
+   - Visit the GitHub repository
+   - Click "New Pull Request"
+   - Select your branch
+   - Fill in PR description
 
-**PR 描述模板:**
+**PR description template:**
 
 ```markdown
-## 变更说明
-简要描述本次 PR 的目的和内容
+## Summary of Changes
+Brief description of the purpose and content of this PR
 
-## 变更类型
-- [ ] Bug 修复
-- [ ] 新功能
-- [ ] 文档更新
-- [ ] 代码重构
-- [ ] 性能优化
+## Change Type
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Documentation update
+- [ ] Code refactoring
+- [ ] Performance optimization
 
-## 测试
-描述如何测试这些变更
+## Testing
+Describe how to test these changes
 
-## 相关 Issue
+## Related Issues
 Closes #123
 
-## 截图 (如适用)
-添加相关截图
+## Screenshots (if applicable)
+Add relevant screenshots
 
-## 检查清单
-- [ ] 代码遵循项目风格
-- [ ] 已添加必要的注释
-- [ ] 已更新相关文档
-- [ ] 已完成本地测试
-- [ ] 提交信息符合规范
+## Checklist
+- [ ] Code follows project style
+- [ ] Added necessary comments
+- [ ] Updated relevant documentation
+- [ ] Completed local testing
+- [ ] Commit messages follow conventions
 ```
 
-## 💻 开发指南
+## 💻 Development Guide
 
-### 项目结构
+### Project Structure
 
 ```
 AgentBox/
-├── gbox                 # 主入口脚本
-├── lib/                 # 模块化库
-│   ├── common.sh        # 通用工具
-│   ├── container.sh     # 容器管理
-│   ├── agent.sh         # Agent 会话
+├── gbox                 # Main entry script
+├── lib/                 # Modular libraries
+│   ├── common.sh        # Common utilities
+│   ├── container.sh     # Container management
+│   ├── agent.sh         # Agent sessions
 │   └── ...
-├── docs/                # 文档
-├── Dockerfile           # 镜像构建
-└── README.md            # 项目说明
+├── docs/                # Documentation
+├── Dockerfile           # Image build
+└── README.md            # Project description
 ```
 
-### 代码风格
+### Code Style
 
-#### Shell 脚本
+#### Shell Scripts
 
 ```bash
-# ✅ 好的风格
+# ✅ Good style
 function my_function() {
     local param1="$1"
     local param2="$2"
 
     if [[ -z "$param1" ]]; then
-        error "参数不能为空"
+        error "Parameter cannot be empty"
         return 1
     fi
 
-    echo "处理: $param1"
+    echo "Processing: $param1"
     return 0
 }
 
-# ❌ 不好的风格
+# ❌ Bad style
 my_function() {
 a=$1
 if [ -z "$a" ]
@@ -260,142 +261,142 @@ fi
 }
 ```
 
-**规范:**
-- 使用 4 空格缩进
-- 函数使用 `function name()` 格式
-- 变量使用小写+下划线
-- 常量使用大写+下划线
-- 使用 `[[ ]]` 而不是 `[ ]`
-- 字符串使用双引号
-- 添加必要的注释
+**Standards:**
+- Use 4-space indentation
+- Use `function name()` format
+- Variables: lowercase_with_underscores
+- Constants: UPPERCASE_WITH_UNDERSCORES
+- Use `[[ ]]` instead of `[ ]`
+- Quote all string variables
+- Add necessary comments
 
-#### 文档
+#### Documentation
 
 ```markdown
-# ✅ 好的文档
-## 功能描述
+# ✅ Good documentation
+## Feature Description
 
-清晰简洁的描述
+Clear and concise description
 
-### 使用示例
+### Usage Example
 
 \`\`\`bash
 ./gbox claude
 \`\`\`
 
-### 参数说明
+### Parameter Description
 
-- `--memory` - 内存限制 (默认: 4g)
+- `--memory` - Memory limit (default: 4g)
 
-# ❌ 不好的文档
-功能xxx
+# ❌ Bad documentation
+Feature xxx
 
-用法: xxx
+Usage: xxx
 ```
 
-### 测试
+### Testing
 
-#### 手动测试清单
+#### Manual Testing Checklist
 
-新增功能时,请确保测试:
+When adding new features, ensure you test:
 
-- [ ] 基本功能正常
-- [ ] 错误处理正确
-- [ ] 日志输出清晰
-- [ ] 不影响现有功能
-- [ ] 文档已更新
+- [ ] Basic functionality works
+- [ ] Error handling is correct
+- [ ] Log output is clear
+- [ ] Doesn't affect existing functionality
+- [ ] Documentation is updated
 
-#### 测试脚本
+#### Test Scripts
 
 ```bash
-# 测试基本命令
+# Test basic commands
 ./gbox help
 ./gbox list
 ./gbox status
 
-# 测试 Agent 启动
+# Test agent startup
 ./gbox claude
 ./gbox happy claude
 ./gbox codex
 
-# 测试容器管理
+# Test container management
 ./gbox stop <container>
 ./gbox logs <container>
 ./gbox shell <container>
 
-# 测试 OAuth 管理
+# Test OAuth management
 ./gbox oauth claude status
 ./gbox oauth claude list
 ```
 
-## 📚 开发资源
+## 📚 Development Resources
 
-### 文档
-- [快速入门](./QUICKSTART.md)
-- [架构设计](./docs/ARCHITECTURE.md)
+### Documentation
+- [Quick Start](./QUICKSTART.md)
+- [Architecture Design](./docs/ARCHITECTURE.md)
 
-### 工具
-- [shellcheck](https://www.shellcheck.net/) - Shell 脚本检查
-- [shfmt](https://github.com/mvdan/sh) - Shell 脚本格式化
+### Tools
+- [shellcheck](https://www.shellcheck.net/) - Shell script linting
+- [shfmt](https://github.com/mvdan/sh) - Shell script formatting
 
-### 学习资源
-- [Bash 编程指南](https://tldp.org/LDP/abs/html/)
-- [Docker 文档](https://docs.docker.com/)
-- [Conventional Commits](https://www.conventionalcommits.org/zh-hans/)
+### Learning Resources
+- [Bash Programming Guide](https://tldp.org/LDP/abs/html/)
+- [Docker Documentation](https://docs.docker.com/)
+- [Conventional Commits](https://www.conventionalcommits.org/)
 
-## 🎓 最佳实践
+## 🎓 Best Practices
 
-### 1. 小步提交
+### 1. Small Commits
 
-每次提交应该:
-- 只做一件事
-- 可以独立审查
-- 通过所有测试
-- 包含清晰的提交信息
+Each commit should:
+- Do one thing only
+- Be independently reviewable
+- Pass all tests
+- Include clear commit message
 
-### 2. 文档先行
+### 2. Documentation First
 
-添加新功能时:
-1. 先更新文档
-2. 再实现功能
-3. 确保文档和代码一致
+When adding new features:
+1. Update documentation first
+2. Then implement the feature
+3. Ensure documentation and code are consistent
 
-### 3. 向后兼容
+### 3. Backward Compatibility
 
-除非主版本更新,否则:
-- 不要破坏现有 API
-- 不要移除现有功能
-- 添加功能时保持兼容
+Unless it's a major version update:
+- Don't break existing APIs
+- Don't remove existing functionality
+- Maintain compatibility when adding features
 
-### 4. 代码审查
+### 4. Code Review
 
-提交 PR 后:
-- 回应审查意见
-- 及时更新代码
-- 保持礼貌友好
+After submitting a PR:
+- Respond to review comments
+- Update code promptly
+- Stay polite and friendly
 
-## 🆘 获取帮助
+## 🆘 Getting Help
 
-遇到问题？
+Running into issues?
 
-1. **查看文档** - [README](./README.md), [QUICKSTART](./QUICKSTART.md)
-2. **搜索 Issues** - 可能已有相关讨论
-3. **提问** - 在 [Discussions](https://github.com/Gravtice/AgentBox/discussions) 提问
-4. **报告 Bug** - 创建新 [Issue](https://github.com/Gravtice/AgentBox/issues)
+1. **Check documentation** - [README](./README.md), [QUICKSTART](./QUICKSTART.md)
+2. **Search Issues** - There may already be relevant discussions
+3. **Ask questions** - Ask in [Discussions](https://github.com/Gravtice/AgentBox/discussions)
+4. **Report bugs** - Create a new [Issue](https://github.com/Gravtice/AgentBox/issues)
 
-## 📮 联系方式
+## 📮 Contact
 
-- **GitHub Issues**: [提交问题](https://github.com/Gravtice/AgentBox/issues)
-- **GitHub Discussions**: [参与讨论](https://github.com/Gravtice/AgentBox/discussions)
+- **GitHub Issues**: [Submit issues](https://github.com/Gravtice/AgentBox/issues)
+- **GitHub Discussions**: [Join discussions](https://github.com/Gravtice/AgentBox/discussions)
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-感谢所有贡献者的付出！
+Thank you to all contributors for your efforts!
 
-你的贡献会列在:
+Your contributions will be listed in:
 - [CHANGELOG.md](./CHANGELOG.md)
 - GitHub Contributors
 
 ---
 
-**再次感谢你的贡献！** ❤️
+**Thank you again for your contributions!** ❤️

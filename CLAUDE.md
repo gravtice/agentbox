@@ -633,5 +633,3 @@ Interactive debugging:
 - [QUICKSTART.md](./QUICKSTART.md) - 5-minute getting started guide
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Detailed architecture design
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
-- [WORKTREE_SUPPORT.md](./docs/WORKTREE_SUPPORT.md) - Git worktree documentation
-- [RESOURCE_CONFIG.md](./docs/RESOURCE_CONFIG.md) - Resource configuration guide
