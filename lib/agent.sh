@@ -105,24 +105,6 @@ function agent_session() {
     local agent="$2"
     shift 2
     local agent_args=("$@")
-    # MCP 配置文件路径（宿主机路径，会被挂载到容器内的 ~/.claude/）
-    local claude_mcp_config_path="$GBOX_CLAUDE_DIR/mcp.session.json"
-    # 容器内的 MCP 配置文件路径（传递给 claude 命令）
-    local container_mcp_config_path="$HOME/.claude/mcp.session.json"
-    local claude_mcp_config_escaped=""
-    local claude_has_mcp_config=0
-    if [[ "$agent" == "claude" ]]; then
-        # 确保宿主机的 gbox claude 配置目录存在
-        mkdir -p "$GBOX_CLAUDE_DIR"
-        # 如果 mcp.session.json 不存在或为空，创建一个符合 Claude Code 规范的空配置
-        if [[ ! -f "$claude_mcp_config_path" ]] || [[ ! -s "$claude_mcp_config_path" ]]; then
-            echo '{"mcpServers":{}}' > "$claude_mcp_config_path"
-        fi
-
-        claude_has_mcp_config=1
-        # 转义容器内的路径（不是宿主机路径）
-        claude_mcp_config_escaped=$(printf '%q' "$container_mcp_config_path")
-    fi
 
     local agent_args_skip_delimiter=0
     if [[ "$agent" == "claude" ]]; then
@@ -214,12 +196,9 @@ function agent_session() {
         if [[ "$run_mode" == "local-remote" ]]; then
             # 远程协作模式：使用 happy
             cmd="${cmd}happy $agent"
-            # claude 需要 --dangerously-skip-permissions 和容器专用 MCP 配置
+            # claude 需要 --dangerously-skip-permissions
             if [[ "$agent" == "claude" ]]; then
                 cmd="$cmd --dangerously-skip-permissions"
-                if (( claude_has_mcp_config == 1 )); then
-                    cmd="$cmd --mcp-config=$claude_mcp_config_escaped"
-                fi
             # gemini 需要 --yolo 自动化模式
             elif [[ "$agent" == "gemini" ]]; then
                 cmd="$cmd --yolo"
@@ -227,12 +206,9 @@ function agent_session() {
         else
             # 本地模式：直接运行 agent
             cmd="${cmd}$agent"
-            # claude 需要 --dangerously-skip-permissions 和容器专用 MCP 配置
+            # claude 需要 --dangerously-skip-permissions
             if [[ "$agent" == "claude" ]]; then
                 cmd="$cmd --dangerously-skip-permissions"
-                if (( claude_has_mcp_config == 1 )); then
-                    cmd="$cmd --mcp-config=$claude_mcp_config_escaped"
-                fi
             # gemini 需要 --yolo 自动化模式
             elif [[ "$agent" == "gemini" ]]; then
                 cmd="$cmd --yolo"
@@ -293,9 +269,6 @@ function agent_session() {
                 cmd="${cmd}happy $agent"
                 if [[ "$agent" == "claude" ]]; then
                     cmd="$cmd --dangerously-skip-permissions"
-                    if (( claude_has_mcp_config == 1 )); then
-                        cmd="$cmd --mcp-config=$claude_mcp_config_escaped"
-                    fi
                 elif [[ "$agent" == "gemini" ]]; then
                     cmd="$cmd --yolo"
                 fi
@@ -303,9 +276,6 @@ function agent_session() {
                 cmd="${cmd}$agent"
                 if [[ "$agent" == "claude" ]]; then
                     cmd="$cmd --dangerously-skip-permissions"
-                    if (( claude_has_mcp_config == 1 )); then
-                        cmd="$cmd --mcp-config=$claude_mcp_config_escaped"
-                    fi
                 elif [[ "$agent" == "gemini" ]]; then
                     cmd="$cmd --yolo"
                 fi
@@ -348,12 +318,9 @@ function agent_session() {
         if [[ "$run_mode" == "local-remote" ]]; then
             # 远程协作模式：使用 happy
             cmd="${cmd}happy $agent"
-            # claude 需要 --dangerously-skip-permissions 和容器专用 MCP 配置
+            # claude 需要 --dangerously-skip-permissions
             if [[ "$agent" == "claude" ]]; then
                 cmd="$cmd --dangerously-skip-permissions"
-                if (( claude_has_mcp_config == 1 )); then
-                    cmd="$cmd --mcp-config=$claude_mcp_config_escaped"
-                fi
             # gemini 需要 --yolo 自动化模式
             elif [[ "$agent" == "gemini" ]]; then
                 cmd="$cmd --yolo"
@@ -361,12 +328,9 @@ function agent_session() {
         else
             # 本地模式：直接运行 agent
             cmd="${cmd}$agent"
-            # claude 需要 --dangerously-skip-permissions 和容器专用 MCP 配置
+            # claude 需要 --dangerously-skip-permissions
             if [[ "$agent" == "claude" ]]; then
                 cmd="$cmd --dangerously-skip-permissions"
-                if (( claude_has_mcp_config == 1 )); then
-                    cmd="$cmd --mcp-config=$claude_mcp_config_escaped"
-                fi
             # gemini 需要 --yolo 自动化模式
             elif [[ "$agent" == "gemini" ]]; then
                 cmd="$cmd --yolo"

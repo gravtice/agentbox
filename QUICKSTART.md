@@ -330,6 +330,24 @@ ls -la ~/.gbox/
 tar -xzf gbox-backup-20241106.tar.gz -C ~
 ```
 
+### 问题 7: Playwright MCP 浏览器占用错误
+
+**症状**: Claude Code 提示 `Error: Browser is already in use for /usr/local/share/playwright/mcp-chrome-03e4594, use --isolated to run multiple instances of the same browser`
+
+**原因**: Playwright MCP 的浏览器实例已被占用,需要使用 `--isolated` 参数来运行独立实例
+
+**解决方法**:
+```bash
+# 1. 先卸载 Playwright MCP
+./gbox claude -- mcp remove playwright
+
+# 2. 使用带隔离参数重新安装
+./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+
+# 3. 退出当前 Claude Code 会话 (Ctrl+D)，重新进入
+./gbox claude
+```
+
 ### 清理和重置
 
 如果遇到无法解决的问题,可以完全清理并重新开始:

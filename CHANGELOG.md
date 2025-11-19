@@ -71,7 +71,6 @@
 ### 修复
 - 修复 git submodule 递归更新问题 (#4ac3281)
 - 修复参考目录挂载安全问题 (#4038841)
-- 修复没有 claude/mcp.session.json 启动报错 (#1e033bb)
 - 修复传递参数给 agent 内部的问题 (#14ddec9)
 
 ## [未发布]

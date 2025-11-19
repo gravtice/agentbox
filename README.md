@@ -239,6 +239,14 @@ docker ps -a | grep gbox
 ./gbox claude --ports "8888:8000"
 ```
 
+### Playwright MCP 浏览器占用
+
+```bash
+# 卸载并使用 --isolated 参数重新安装
+./gbox claude -- mcp remove playwright
+./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+```
+
 更多问题请查看 [故障排查文档](./QUICKSTART.md#故障排查)
 
 ## 🤝 贡献
