@@ -113,14 +113,21 @@ function safe_jq_update() {
 # 状态键生成
 # ============================================
 
-# 生成状态文件键：{workDir}:{run_mode}:{agent}
-# 对于 only-local: {workDir}:only-local:{agent}
-# 对于 local-remote: {workDir}:local-remote:{agent}
+# 生成状态文件键：{mainDir}:{run_mode}:{agent}
+# 注意：使用主仓库目录而不是工作目录，确保主仓库和 worktree 共享同一个状态键
+# 这与容器名生成逻辑保持一致（容器名也是基于主仓库目录）
+# 对于 only-local: {mainDir}:only-local:{agent}
+# 对于 local-remote: {mainDir}:local-remote:{agent}
 function generate_state_key() {
     local work_dir="$1"
     local run_mode="$2"
     local agent="$3"
-    echo "${work_dir}:${run_mode}:${agent}"
+
+    # 获取主仓库目录（如果是 worktree，会返回主仓库目录）
+    # 确保主仓库和 worktree 共享同一个状态键
+    local main_dir=$(get_main_repo_dir "$work_dir")
+
+    echo "${main_dir}:${run_mode}:${agent}"
 }
 
 # ============================================
@@ -142,12 +149,13 @@ function get_state_key_by_container() {
     jq -r --arg name "$container_name" 'to_entries[] | select(.value == $name) | .key' "$STATE_FILE"
 }
 
-# 从容器名获取工作目录（提取键中的 workDir 部分）
+# 从容器名获取主仓库目录（提取键中的 mainDir 部分）
+# 注意：返回的是主仓库目录，不是实际工作目录（worktree 场景）
 function get_workdir_by_container() {
     local container_name="$1"
     local state_key=$(get_state_key_by_container "$container_name")
     if [[ -n "$state_key" ]]; then
-        # 从 "{workDir}:{run_mode}:{agent}" 中提取 workDir
+        # 从 "{mainDir}:{run_mode}:{agent}" 中提取 mainDir
         echo "${state_key%%:*}"
     fi
 }

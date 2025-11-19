@@ -190,8 +190,9 @@ function start_container() {
         exit 1
     fi
 
-    # 检查是否是git仓库
-    if [[ ! -d "$work_dir/.git" ]]; then
+    # 检查是否是git仓库或worktree
+    # 注意: 普通仓库的 .git 是目录，worktree 的 .git 是文件
+    if [[ ! -e "$work_dir/.git" ]]; then
         if (( quiet_mode == 0 )); then
             echo -e "${YELLOW}警告: $work_dir 不是git仓库或worktree${NC}"
         fi
