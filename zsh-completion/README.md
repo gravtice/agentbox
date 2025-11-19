@@ -1,270 +1,267 @@
-# gbox Zsh 自动补全插件
+# gbox Zsh Auto-completion Plugin
 
-为 `gbox` 命令提供智能自动补全功能,类似 git 命令的体验。
+Provides intelligent auto-completion for the `gbox` command, similar to the git command experience.
 
-## 功能特性
+## Features
 
-### 1. 主命令补全
-输入 `gbox ` 后按 `Tab`,自动补全所有可用命令:
-- `list` - 列出运行中的容器
-- `status` - 显示所有容器详细状态
-- `stop` - 停止并删除容器
-- `stop-all` - 停止所有容器
-- `clean` - 清理所有停止的容器
-- `oauth` - OAuth 账号管理
-- `keepalive` - 维持容器管理
-- `pull` / `push` / `build` - 镜像操作
-- `logs` / `exec` / `shell` - 容器操作
-- `help` - 显示帮助信息
-- `happy` - 远程协作模式
+### 1. Main Command Completion
+After typing `gbox ` and pressing `Tab`, auto-complete all available commands:
+- `list` - List running containers
+- `status` - Show detailed status of all containers
+- `stop` - Stop and delete a container
+- `stop-all` - Stop all containers
+- `clean` - Clean up all stopped containers
+- `oauth` - OAuth account management
+- `keepalive` - Container maintenance management
+- `pull` / `push` / `build` - Image operations
+- `logs` / `exec` / `shell` - Container operations
+- `help` - Display help information
+- `happy` - Remote collaboration mode
 
-### 2. AI Agent 补全
-输入 `gbox ` 后按 `Tab`,也会显示所有支持的 AI agents:
+### 2. AI Agent Completion
+After typing `gbox ` and pressing `Tab`, also displays all supported AI agents:
 - `claude` - Claude Code
 - `codex` - OpenAI Codex
 - `gemini` - Google Gemini
 
-### 3. 参数选项补全
-输入 `gbox claude ` 后按 `Tab`,自动补全 gbox 参数:
-- `--memory` / `-m` - 内存限制
-- `--cpu` / `-c` - CPU 核心数
-- `--ports` - 端口映射
-- `--keep` - 退出后保留容器
-- `--name` - 自定义容器名
+### 3. Parameter Option Completion
+After typing `gbox claude ` and pressing `Tab`, auto-complete gbox parameters:
+- `--memory` / `-m` - Memory limit
+- `--cpu` / `-c` - CPU cores
+- `--ports` - Port mapping
+- `--keep` - Keep container after exit
+- `--name` - Custom container name
 
-### 4. 容器名动态补全
-需要容器名的命令(`stop`, `logs`, `shell`, `exec`)会自动补全运行中的容器:
+### 4. Dynamic Container Name Completion
+Commands that require container names (`stop`, `logs`, `shell`, `exec`) automatically complete running containers:
 ```bash
 gbox stop <Tab>
-# 自动显示: gbox-claude-project  gbox-codex-myapp  等
+# Automatically shows: gbox-claude-project  gbox-codex-myapp  etc.
 ```
 
-### 5. 子命令补全
+### 5. Subcommand Completion
 
-**oauth 子命令:**
+**oauth subcommands:**
 ```bash
 gbox oauth <Tab>
-# 显示: claude  codex  gemini
+# Shows: claude  codex  gemini
 
 gbox oauth claude <Tab>
-# 显示: help  等
+# Shows: help  etc.
 ```
 
-**keepalive 子命令:**
+**keepalive subcommands:**
 ```bash
 gbox keepalive <Tab>
-# 显示: list  stop  stop-all  restart  logs  auto  help
+# Shows: list  stop  stop-all  restart  logs  auto  help
 
 gbox keepalive stop <Tab>
-# 自动补全账号后缀
+# Auto-complete account suffix
 ```
 
-### 6. 远程协作模式补全
+### 6. Remote Collaboration Mode Completion
 ```bash
 gbox happy <Tab>
-# 显示: claude  codex  gemini
+# Shows: claude  codex  gemini
 
 gbox happy claude <Tab>
-# 显示 gbox 参数选项
+# Shows gbox parameter options
 ```
 
-## 快速安装
+## Quick Installation
 
-### 自动安装 (推荐)
+### Automatic Installation (Recommended)
 
-从项目根目录运行:
+Run from the project root directory:
 ```bash
 ./zsh-completion/install.sh
 ```
 
-安装脚本会:
-1. 复制插件文件到 `~/.oh-my-zsh/custom/plugins/gbox/`
-2. 自动更新 `~/.zshrc`,添加 `gbox` 到 plugins 数组
-3. 清理补全缓存
-4. 提示你重新加载 shell
+The installation script will:
+1. Copy plugin files to `~/.oh-my-zsh/custom/plugins/gbox/`
+2. Automatically update `~/.zshrc`, adding `gbox` to the plugins array
+3. Clear completion cache
+4. Prompt you to reload your shell
 
-### 手动安装
+### Manual Installation
 
-如果你想手动安装:
+If you want to install manually:
 
-1. 复制插件文件:
+1. Copy plugin files:
 ```bash
 mkdir -p ~/.oh-my-zsh/custom/plugins/gbox
 cp zsh-completion/gbox.plugin.zsh ~/.oh-my-zsh/custom/plugins/gbox/
 ```
 
-2. 编辑 `~/.zshrc`,在 `plugins` 数组中添加 `gbox`:
+2. Edit `~/.zshrc` and add `gbox` to the `plugins` array:
 ```bash
 plugins=(
     git
     docker
-    # ... 其他插件
-    gbox  # 添加这一行
+    # ... other plugins
+    gbox  # Add this line
 )
 ```
 
-3. 重新加载配置:
+3. Reload the configuration:
 ```bash
 exec zsh
-# 或者
+# or
 source ~/.zshrc
 ```
 
-## 使用示例
+## Usage Examples
 
-### 基本补全
+### Basic Completion
 ```bash
 gbox <Tab>
-# 显示所有命令和 agents
+# Shows all commands and agents
 
 gbox cl<Tab>
-# 自动补全为: gbox claude
+# Auto-completes to: gbox claude
 
 gbox list<Tab>
-# 直接补全命令
+# Directly complete the command
 ```
 
-### 参数补全
+### Parameter Completion
 ```bash
 gbox claude --<Tab>
-# 显示: --memory --cpu --ports --keep --name
+# Shows: --memory --cpu --ports --keep --name
 
 gbox claude -<Tab>
-# 显示: -m -c
+# Shows: -m -c
 ```
 
-### 容器名补全
+### Container Name Completion
 ```bash
 gbox stop <Tab>
-# 显示所有运行中的 gbox-* 容器
+# Shows all running gbox-* containers
 
 gbox logs gbox-<Tab>
-# 自动补全容器名
+# Auto-completes container name
 ```
 
-### 子命令补全
+### Subcommand Completion
 ```bash
 gbox keepalive <Tab>
-# 显示所有 keepalive 子命令
+# Shows all keepalive subcommands
 
 gbox oauth <Tab>
-# 显示所有支持的 agents
+# Shows all supported agents
 ```
 
-## 快捷别名
+## Shortcut Aliases
 
-插件还提供了一些快捷别名:
+The plugin also provides some convenient shortcuts:
 
-| 别名 | 完整命令 | 说明 |
-|------|----------|------|
-| `gb` | `gbox` | 主命令缩写 |
-| `gbl` | `gbox list` | 列出容器 |
-| `gbs` | `gbox status` | 查看状态 |
-| `gbh` | `gbox happy` | 远程协作模式 |
-| `gbc` | `gbox claude` | 运行 Claude |
-| `gbcd` | `gbox codex` | 运行 Codex |
-| `gbgm` | `gbox gemini` | 运行 Gemini |
+| Alias | Full Command | Description |
+|-------|----------|------|
+| `gb` | `gbox` | Main command shortcut |
+| `gbl` | `gbox list` | List containers |
+| `gbs` | `gbox status` | View status |
+| `gbh` | `gbox happy` | Remote collaboration mode |
+| `gbc` | `gbox claude` | Run Claude |
+| `gbcd` | `gbox codex` | Run Codex |
+| `gbgm` | `gbox gemini` | Run Gemini |
 
-使用示例:
+Usage examples:
 ```bash
-gbc                    # 等同于 gbox claude
-gbh claude             # 等同于 gbox happy claude
-gbl                    # 等同于 gbox list
+gbc                    # Equivalent to gbox claude
+gbh claude             # Equivalent to gbox happy claude
+gbl                    # Equivalent to gbox list
 ```
 
-## 验证安装
+## Verify Installation
 
-安装完成后,在终端中测试:
+After installation, test in the terminal:
 
 ```bash
-# 1. 检查函数是否加载
+# 1. Check if the function is loaded
 type _gbox
-# 期望输出: _gbox is a shell function from ...
+# Expected output: _gbox is a shell function from ...
 
-# 2. 检查补全注册
+# 2. Check completion registration
 echo ${_comps[gbox]}
-# 期望输出: _gbox
+# Expected output: _gbox
 
-# 3. 测试补全
+# 3. Test completion
 gbox <Tab>
-# 应该显示所有命令和 agents
+# Should show all commands and agents
 ```
 
-## 故障排除
+## Troubleshooting
 
-### 补全不工作
-1. 确认已经重新加载 shell: `exec zsh`
-2. 检查函数是否加载: `type _gbox`
-3. 清理补全缓存: `rm ~/.zcompdump* && exec zsh`
+### Completion Not Working
+1. Confirm you have reloaded the shell: `exec zsh`
+2. Check if the function is loaded: `type _gbox`
+3. Clear the completion cache: `rm ~/.zcompdump* && exec zsh`
 
-### 容器名补全为空
-- 确保有运行中的 gbox 容器: `docker ps --filter 'name=gbox-'`
-- 检查 Docker 是否正常运行
+### Container Name Completion is Empty
+- Make sure there are running gbox containers: `docker ps --filter 'name=gbox-'`
+- Check if Docker is running properly
 
-### 只看到部分补全选项
-这是正常的,尝试:
+### Only Seeing Partial Completion Options
+This is normal, try:
 ```bash
-gbox cl<Tab>    # 应该补全为 claude
-gbox li<Tab>    # 应该补全为 list
+gbox cl<Tab>    # Should complete to claude
+gbox li<Tab>    # Should complete to list
 ```
 
-## 卸载
+## Uninstall
 
-如果需要卸载:
+If you need to uninstall:
 
-1. 从 `~/.zshrc` 的 `plugins` 数组中移除 `gbox`
-2. 删除插件目录: `rm -rf ~/.oh-my-zsh/custom/plugins/gbox`
-3. 重新加载: `exec zsh`
+1. Remove `gbox` from the `plugins` array in `~/.zshrc`
+2. Delete the plugin directory: `rm -rf ~/.oh-my-zsh/custom/plugins/gbox`
+3. Reload: `exec zsh`
 
-## 技术说明
+## Technical Details
 
-- 补全系统: Zsh completion system with `_arguments`
-- 实现方式: oh-my-zsh 自定义插件
-- 动态补全: 容器名从 Docker 实时获取
-- 支持版本: Zsh 5.0+, oh-my-zsh
+- Completion system: Zsh completion system with `_arguments`
+- Implementation: oh-my-zsh custom plugin
+- Dynamic completion: Container names fetched from Docker in real-time
+- Supported version: Zsh 5.0+, oh-my-zsh
 
-## 自定义
+## Customization
 
-如果你想修改补全行为,可以编辑插件文件:
+If you want to modify the completion behavior, you can edit the plugin file:
 ```bash
 vim ~/.oh-my-zsh/custom/plugins/gbox/gbox.plugin.zsh
 ```
 
-修改后重新加载:
+After modification, reload:
 ```bash
 exec zsh
 ```
 
-## 维护指南
+## Maintenance Guide
 
-### 何时需要更新补全插件
+### When to Update the Completion Plugin
 
-当 gbox 有以下变化时,需要同步更新补全插件:
+Update the completion plugin when gbox has the following changes:
 
-1. **添加/删除主命令** - 更新 `commands` 数组 (第12-29行)
-2. **添加/删除 AI Agent** - 更新 `agents` 数组 (第32-36行)
-3. **修改参数选项** - 更新 `gbox_opts` 数组 (第140-151行)
-4. **修改子命令** - 更新相应的子命令数组 (第39-59行)
+1. **Add/Remove main commands** - Update `commands` array (lines 12-29)
+2. **Add/Remove AI Agents** - Update `agents` array (lines 32-36)
+3. **Modify parameter options** - Update `gbox_opts` array (lines 140-151)
+4. **Modify subcommands** - Update corresponding subcommand arrays (lines 39-59)
 
-### 检查同步状态
+### Check Sync Status
 
-运行自动检查脚本:
+Run the automatic verification script:
 ```bash
 ./zsh-completion/check_sync.sh
 ```
 
-脚本会对比 gbox 源码和补全插件,报告不一致的地方。
+The script compares gbox source code and the completion plugin, reporting any inconsistencies.
 
-### 更新流程
+### Update Workflow
 
-1. 修改 `gbox.plugin.zsh`
-2. 运行 `./zsh-completion/check_sync.sh` 验证
-3. 更新 `CHANGELOG.md`
-4. 运行 `./zsh-completion/install.sh` 安装新版本
-5. 测试补全功能
+1. Modify `gbox.plugin.zsh`
+2. Run `./zsh-completion/check_sync.sh` to verify
+3. Run `./zsh-completion/install.sh` to install the new version
+4. Test completion functionality
 
-详细维护文档: [MAINTENANCE.md](MAINTENANCE.md)
+## Contributing
 
-## 贡献
-
-欢迎提交问题和改进建议!插件源码位于: `zsh-completion/gbox.plugin.zsh`
+We welcome bug reports and improvement suggestions! The plugin source code is located at: `zsh-completion/gbox.plugin.zsh`
