@@ -1,5 +1,5 @@
 #!/bin/bash
-# gbox - Gravtice AgentBox 主脚本（加载模块化组件并执行命令路由）
+# gbox - Gravtice AgentBox main script (loads modular components and executes command routing)
 
 set -e
 
@@ -18,7 +18,7 @@ check_docker
 check_jq
 init_state
 
-# 加载 .env 和 .env.local 文件
+# Load .env and .env.local files
 load_env_files
 
 case "${1:-}" in
@@ -65,13 +65,13 @@ case "${1:-}" in
         print_usage "$2"
         ;;
     *)
-        # 命令格式：
-        # gbox <agent> [-- <参数>]       -> only-local 模式
-        # gbox happy <agent> [-- <参数>] -> local-remote 模式
+        # Command format:
+        # gbox <agent> [-- <args>]       -> only-local mode
+        # gbox happy <agent> [-- <args>] -> local-remote mode
         first_arg="$1"
 
         if [[ -z "$first_arg" ]]; then
-            echo -e "${RED}错误: 请指定 agent 或命令${NC}"
+            echo -e "${RED}Error: Please specify agent or command${NC}"
             echo ""
             print_usage
             exit 1
@@ -86,15 +86,15 @@ case "${1:-}" in
             agent="$2"
 
             if [[ -z "$agent" ]]; then
-                echo -e "${RED}错误: 请指定 agent${NC}"
-                echo -e "${YELLOW}用法: gbox happy <agent> [-- <参数>]${NC}"
-                echo -e "${YELLOW}示例: gbox happy claude${NC}"
+                echo -e "${RED}Error: Please specify agent${NC}"
+                echo -e "${YELLOW}Usage: gbox happy <agent> [-- <args>]${NC}"
+                echo -e "${YELLOW}Example: gbox happy claude${NC}"
                 exit 1
             fi
 
             if ! is_valid_agent "$agent"; then
-                echo -e "${RED}错误: 不支持的 agent '$agent'${NC}"
-                echo -e "${YELLOW}支持的 agent: ${SUPPORTED_AGENTS[*]}${NC}"
+                echo -e "${RED}Error: Unsupported agent '$agent'${NC}"
+                echo -e "${YELLOW}Supported agents: ${SUPPORTED_AGENTS[*]}${NC}"
                 echo ""
                 print_usage
                 exit 1
@@ -107,7 +107,7 @@ case "${1:-}" in
                     --memory|-m)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --memory/-m 需要参数${NC}"
+                            echo -e "${RED}Error: --memory/-m requires argument${NC}"
                             exit 1
                         fi
                         MEMORY_LIMIT="$1"
@@ -116,7 +116,7 @@ case "${1:-}" in
                     --cpu|-c)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --cpu/-c 需要参数${NC}"
+                            echo -e "${RED}Error: --cpu/-c requires argument${NC}"
                             exit 1
                         fi
                         CPU_LIMIT="$1"
@@ -125,8 +125,8 @@ case "${1:-}" in
                     --ports)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --ports 需要参数${NC}"
-                            echo -e "${YELLOW}格式: --ports \"8000:8000;7000;7001\"${NC}"
+                            echo -e "${RED}Error: --ports requires argument${NC}"
+                            echo -e "${YELLOW}Format: --ports \"8000:8000;7000;7001\"${NC}"
                             exit 1
                         fi
                         CONTAINER_PORTS="$1"
@@ -135,8 +135,8 @@ case "${1:-}" in
                     --ref-dirs)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --ref-dirs 需要参数${NC}"
-                            echo -e "${YELLOW}格式: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
+                            echo -e "${RED}Error: --ref-dirs requires argument${NC}"
+                            echo -e "${YELLOW}Format: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
                             exit 1
                         fi
                         CONTAINER_REF_DIRS="$1"
@@ -145,8 +145,8 @@ case "${1:-}" in
                     --proxy)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --proxy 需要参数${NC}"
-                            echo -e "${YELLOW}示例: --proxy http://127.0.0.1:7890${NC}"
+                            echo -e "${RED}Error: --proxy requires argument${NC}"
+                            echo -e "${YELLOW}Example: --proxy http://127.0.0.1:7890${NC}"
                             exit 1
                         fi
                         AGENT_PROXY="$1"
@@ -155,7 +155,7 @@ case "${1:-}" in
                     --api-key)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --api-key 需要参数${NC}"
+                            echo -e "${RED}Error: --api-key requires argument${NC}"
                             exit 1
                         fi
                         ANTHROPIC_API_KEY="$1"
@@ -172,7 +172,7 @@ case "${1:-}" in
                     --name)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --name 需要参数${NC}"
+                            echo -e "${RED}Error: --name requires argument${NC}"
                             exit 1
                         fi
                         CONTAINER_NAME="$1"
@@ -184,10 +184,10 @@ case "${1:-}" in
                         break
                         ;;
                     *)
-                        echo -e "${RED}错误: 未知的 gbox 参数 '$1'${NC}"
-                        echo -e "${YELLOW}用法: gbox happy $agent [gbox参数] [-- <agent参数>]${NC}"
-                        echo -e "${YELLOW}gbox 参数: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
-                        echo -e "${YELLOW}示例: gbox happy $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
+                        echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
+                        echo -e "${YELLOW}Usage: gbox happy $agent [gbox-options] [-- <agent-args>]${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}Example: gbox happy $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
                         exit 1
                         ;;
                 esac
@@ -197,8 +197,8 @@ case "${1:-}" in
             agent="$first_arg"
 
             if ! is_valid_agent "$agent"; then
-                echo -e "${RED}错误: 不支持的 agent '$agent'${NC}"
-                echo -e "${YELLOW}支持的 agent: ${SUPPORTED_AGENTS[*]}${NC}"
+                echo -e "${RED}Error: Unsupported agent '$agent'${NC}"
+                echo -e "${YELLOW}Supported agents: ${SUPPORTED_AGENTS[*]}${NC}"
                 echo ""
                 print_usage
                 exit 1
@@ -211,7 +211,7 @@ case "${1:-}" in
                     --memory|-m)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --memory/-m 需要参数${NC}"
+                            echo -e "${RED}Error: --memory/-m requires argument${NC}"
                             exit 1
                         fi
                         MEMORY_LIMIT="$1"
@@ -220,7 +220,7 @@ case "${1:-}" in
                     --cpu|-c)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --cpu/-c 需要参数${NC}"
+                            echo -e "${RED}Error: --cpu/-c requires argument${NC}"
                             exit 1
                         fi
                         CPU_LIMIT="$1"
@@ -229,8 +229,8 @@ case "${1:-}" in
                     --ports)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --ports 需要参数${NC}"
-                            echo -e "${YELLOW}格式: --ports \"8000:8000;7000;7001\"${NC}"
+                            echo -e "${RED}Error: --ports requires argument${NC}"
+                            echo -e "${YELLOW}Format: --ports \"8000:8000;7000;7001\"${NC}"
                             exit 1
                         fi
                         CONTAINER_PORTS="$1"
@@ -239,8 +239,8 @@ case "${1:-}" in
                     --ref-dirs)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --ref-dirs 需要参数${NC}"
-                            echo -e "${YELLOW}格式: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
+                            echo -e "${RED}Error: --ref-dirs requires argument${NC}"
+                            echo -e "${YELLOW}Format: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
                             exit 1
                         fi
                         CONTAINER_REF_DIRS="$1"
@@ -249,8 +249,8 @@ case "${1:-}" in
                     --proxy)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --proxy 需要参数${NC}"
-                            echo -e "${YELLOW}示例: --proxy http://127.0.0.1:7890${NC}"
+                            echo -e "${RED}Error: --proxy requires argument${NC}"
+                            echo -e "${YELLOW}Example: --proxy http://127.0.0.1:7890${NC}"
                             exit 1
                         fi
                         AGENT_PROXY="$1"
@@ -259,7 +259,7 @@ case "${1:-}" in
                     --api-key)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --api-key 需要参数${NC}"
+                            echo -e "${RED}Error: --api-key requires argument${NC}"
                             exit 1
                         fi
                         ANTHROPIC_API_KEY="$1"
@@ -276,7 +276,7 @@ case "${1:-}" in
                     --name)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}错误: --name 需要参数${NC}"
+                            echo -e "${RED}Error: --name requires argument${NC}"
                             exit 1
                         fi
                         CONTAINER_NAME="$1"
@@ -288,10 +288,10 @@ case "${1:-}" in
                         break
                         ;;
                     *)
-                        echo -e "${RED}错误: 未知的 gbox 参数 '$1'${NC}"
-                        echo -e "${YELLOW}用法: gbox $agent [gbox参数] [-- <agent参数>]${NC}"
-                        echo -e "${YELLOW}gbox 参数: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
-                        echo -e "${YELLOW}示例: gbox $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
+                        echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
+                        echo -e "${YELLOW}Usage: gbox $agent [gbox-options] [-- <agent-args>]${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}Example: gbox $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
                         exit 1
                         ;;
                 esac

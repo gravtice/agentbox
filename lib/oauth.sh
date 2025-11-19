@@ -1,11 +1,11 @@
 #!/bin/bash
-# lib/oauth.sh - OAuth 账号管理模块
-# 负责邮箱解析、账号查找、限制解析、账号切换与命令路由（依赖 lib/common.sh 提供的目录与配色常量）
+# lib/oauth.sh - OAuth account management module
+# Responsible for email parsing, account finding, limit parsing, account switching, and command routing (depends on directory and color constants provided by lib/common.sh)
 
 # ============================================
-# 邮箱解析
+# Email Parsing
 # ============================================
-# 从 .claude.json 提取邮件地址并转换为文件名安全格式
+# Extract email address from .claude.json and convert to filename-safe format
 function extract_email_safe() {
     local claude_json="$GBOX_CLAUDE_DIR/.claude.json"
 
@@ -14,20 +14,20 @@ function extract_email_safe() {
         return 1
     fi
 
-    # 尝试从 emailAddress 字段提取
+    # Try to extract from emailAddress field
     local email=$(jq -r '.oauthAccount.emailAddress // empty' "$claude_json" 2>/dev/null)
 
     if [[ -z "$email" ]]; then
-        # 尝试其他可能的字段
+        # Try other possible fields
         email=$(jq -r '.oauthAccount.Email // .Email // .email // .emailAddress // empty' "$claude_json" 2>/dev/null)
     fi
 
     if [[ -n "$email" ]]; then
-        # 将邮件地址转换为文件名安全格式
-        # 1. 转换为小写
-        # 2. 将 @ 替换为 -at-
-        # 3. 将 . 替换为 -
-        # 4. 其他特殊字符也替换为 -
+        # Convert email address to filename-safe format
+        # 1. Convert to lowercase
+        # 2. Replace @ with -at-
+        # 3. Replace . with -
+        # 4. Replace other special characters with -
         local safe_email=$(echo "$email" | tr '[:upper:]' '[:lower:]' | sed 's/@/-at-/g' | sed 's/\./-/g' | sed 's/[^a-z0-9-]/-/g')
         echo "$safe_email"
         return 0
@@ -38,50 +38,50 @@ function extract_email_safe() {
 }
 
 # ============================================
-# 账号查找与 Token 状态
+# Account Finding and Token Status
 # ============================================
-# 查找可用的账号配置文件（V5 版本 - 使用 .claude-*.json）
-# 参数: current_account (可选,当前账号,用于排除)
-# 返回格式: 账号后缀 (如: user-at-example-com 或 user-at-example-com-2025110611)
-# 优先级:
-#   1. 无限制 + token 未过期 (最佳: 无限制且立即可用)
-#   2. 限制已解除 + token 未过期 (次佳: 立即可用)
-#   3. 无限制 + token 已过期 (需重新认证但无限制)
-#   4. 限制已解除 + token 已过期 (需重新认证)
+# Find available account configuration files (V5 version - uses .claude-*.json)
+# Parameter: current_account (optional, current account to exclude)
+# Return format: account suffix (e.g., user-at-example-com or user-at-example-com-2025110611)
+# Priority:
+#   1. Unlimited + token not expired (best: unlimited and immediately available)
+#   2. Limit lifted + token not expired (good: immediately available)
+#   3. Unlimited + token expired (needs re-authentication but unlimited)
+#   4. Limit lifted + token expired (needs re-authentication)
 function find_available_account() {
     local current_account="${1:-}"
     local current_datetime=$(date +%Y%m%d%H)
 
-    # 候选账号数组
-    # 格式: "优先级:后缀:token状态"
+    # Candidate account array
+    # Format: "priority:suffix:token_status"
     local candidates=()
 
-    # 第一步: 收集无限制账号 (不带日期后缀)
+    # Step 1: Collect unlimited accounts (without date suffix)
     for file in "$GBOX_CLAUDE_DIR"/.claude-*.json; do
         if [[ -f "$file" ]]; then
             local basename=$(basename "$file")
-            # 检查是否不包含日期后缀 (格式: .claude-prefix.json)
-            # 排除以10位数字结尾的文件名 (日期格式: YYYYMMDDHH)
+            # Check if it does not contain date suffix (format: .claude-prefix.json)
+            # Exclude filenames ending with 10 digits (date format: YYYYMMDDHH)
             if [[ "$basename" =~ ^\.claude-[a-z0-9_-]+\.json$ ]] && [[ ! "$basename" =~ -[0-9]{10}\.json$ ]]; then
-                # 提取 prefix: .claude-{prefix}.json -> {prefix}
+                # Extract prefix: .claude-{prefix}.json -> {prefix}
                 local prefix="${basename#.claude-}"
                 prefix="${prefix%.json}"
 
-                # 排除当前账号
+                # Exclude current account
                 if [[ -n "$current_account" && "$prefix" == "$current_account" ]]; then
                     continue
                 fi
 
-                # 验证对应的 credentials 文件是否存在
+                # Verify if corresponding credentials file exists
                 if [[ -f "$GBOX_CLAUDE_DIR/.credentials-$prefix.json" ]]; then
-                    # 检查 token 是否过期
+                    # Check if token is expired
                     local token_status=$(check_token_expiry "$GBOX_CLAUDE_DIR/.credentials-$prefix.json")
 
                     if [[ "$token_status" =~ ^valid: ]]; then
-                        # 优先级 1: 无限制 + token 未过期
+                        # Priority 1: Unlimited + token not expired
                         candidates+=("1:$prefix:valid")
                     else
-                        # 优先级 3: 无限制 + token 已过期
+                        # Priority 3: Unlimited + token expired
                         candidates+=("3:$prefix:expired")
                     fi
                 fi
@@ -89,37 +89,37 @@ function find_available_account() {
         fi
     done
 
-    # 第二步: 收集限制已解除的账号 (日期后缀已过期)
+    # Step 2: Collect accounts with lifted limit (date suffix expired)
     for file in "$GBOX_CLAUDE_DIR"/.claude-*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].json; do
         if [[ -f "$file" ]]; then
             local basename=$(basename "$file")
-            # 提取日期部分: .claude-prefix-2025110611.json -> 2025110611
+            # Extract date part: .claude-prefix-2025110611.json -> 2025110611
             local date_part="${basename##*-}"
             date_part="${date_part%.json}"
 
-            # 检查日期时间是否已过期或已到达
-            # 使用 <= 而不是 <，因为到达限制时间点就可以使用了
-            # 例如: 限制到2025110511(11点)，那么11点整就可以使用
+            # Check if the date/time is expired or reached
+            # Use <= instead of <, because once the limit time is reached it can be used
+            # Example: limit until 2025110511 (11am), so 11am sharp can be used
             if [[ "$date_part" -le "$current_datetime" ]]; then
-                # 提取完整的后缀: .claude-{prefix-YYYYMMDDHH}.json -> prefix-YYYYMMDDHH
+                # Extract full suffix: .claude-{prefix-YYYYMMDDHH}.json -> prefix-YYYYMMDDHH
                 local suffix="${basename#.claude-}"
                 suffix="${suffix%.json}"
 
-                # 排除当前账号
+                # Exclude current account
                 if [[ -n "$current_account" && "$suffix" == "$current_account" ]]; then
                     continue
                 fi
 
-                # 验证对应的 credentials 文件是否存在
+                # Verify if corresponding credentials file exists
                 if [[ -f "$GBOX_CLAUDE_DIR/.credentials-$suffix.json" ]]; then
-                    # 检查 token 是否过期
+                    # Check if token is expired
                     local token_status=$(check_token_expiry "$GBOX_CLAUDE_DIR/.credentials-$suffix.json")
 
                     if [[ "$token_status" =~ ^valid: ]]; then
-                        # 优先级 2: 限制已解除 + token 未过期
+                        # Priority 2: Limit lifted + token not expired
                         candidates+=("2:$suffix:valid")
                     else
-                        # 优先级 4: 限制已解除 + token 已过期
+                        # Priority 4: Limit lifted + token expired
                         candidates+=("4:$suffix:expired")
                     fi
                 fi
@@ -127,36 +127,36 @@ function find_available_account() {
         fi
     done
 
-    # 第三步: 如果有候选账号，按优先级排序并返回第一个
+    # Step 3: If there are candidate accounts, sort by priority and return the first one
     if [[ ${#candidates[@]} -gt 0 ]]; then
-        # 按优先级数字排序 (1 < 2 < 3 < 4)
+        # Sort by priority number (1 < 2 < 3 < 4)
         local sorted=($(printf '%s\n' "${candidates[@]}" | sort -t: -k1,1n))
         local best="${sorted[0]}"
 
-        # 提取后缀部分
+        # Extract suffix part
         local suffix=$(echo "$best" | cut -d: -f2)
         local token_state=$(echo "$best" | cut -d: -f3)
 
-        # 输出诊断信息到 stderr (不影响函数返回值)
+        # Output diagnostic information to stderr (does not affect function return value)
         local priority=$(echo "$best" | cut -d: -f1)
         case "$priority" in
-            1) echo "  (优先级 1/4: 无限制账号, Token 有效)" >&2 ;;
-            2) echo "  (优先级 2/4: 限制已解除, Token 有效)" >&2 ;;
-            3) echo "  (优先级 3/4: 无限制账号, Token 已过期)" >&2 ;;
-            4) echo "  (优先级 4/4: 限制已解除, Token 已过期)" >&2 ;;
+            1) echo "  (Priority 1/4: Unlimited account, Token valid)" >&2 ;;
+            2) echo "  (Priority 2/4: Limit lifted, Token valid)" >&2 ;;
+            3) echo "  (Priority 3/4: Unlimited account, Token expired)" >&2 ;;
+            4) echo "  (Priority 4/4: Limit lifted, Token expired)" >&2 ;;
         esac
 
         echo "$suffix"
         return 0
     fi
 
-    # 没有找到可用账号
+    # No available account found
     return 1
 }
 
-# 检查 token 是否过期
-# 参数: credentials.json 文件路径
-# 返回: "valid:剩余小时" | "expired:过期小时" | "unknown" | "missing"
+# Check if token is expired
+# Parameter: credentials.json file path
+# Return: "valid:remaining_hours" | "expired:expired_hours" | "unknown" | "missing"
 function check_token_expiry() {
     local credentials_file="$1"
 
@@ -183,17 +183,17 @@ function check_token_expiry() {
 }
 
 # ============================================
-# 限制解析
+# Limit Parsing
 # ============================================
-# OAuth switch 子命令（新版 - 只切换 OAuth 字段）
-# 解析限制字符串，提取时间并转换为 YYYYMMDDHH 格式
-# 参数: limit_str - 限制字符串，例如 "Weekly limit reached ∙ resets Nov 9, 5pm"
-# 返回: YYYYMMDDHH 格式的时间字符串，失败返回空
+# OAuth switch subcommand (new version - only switch OAuth field)
+# Parse limit string, extract time and convert to YYYYMMDDHH format
+# Parameter: limit_str - limit string, e.g., "Weekly limit reached ∙ resets Nov 9, 5pm"
+# Return: time string in YYYYMMDDHH format, empty on failure
 function parse_limit_str() {
     local limit_str="$1"
 
-    # 提取月份、日期和时间
-    # 支持格式: "resets Nov 9, 5pm" 或 "resets Nov 9, 5:00pm"
+    # Extract month, day, and time
+    # Supported formats: "resets Nov 9, 5pm" or "resets Nov 9, 5:00pm"
     if [[ "$limit_str" =~ resets[[:space:]]+([A-Za-z]+)[[:space:]]+([0-9]+),[[:space:]]+([0-9]+):?([0-9]+)?(am|pm) ]]; then
         local month_str="${BASH_REMATCH[1]}"
         local day="${BASH_REMATCH[2]}"
@@ -201,7 +201,7 @@ function parse_limit_str() {
         local minute="${BASH_REMATCH[4]}"
         local ampm="${BASH_REMATCH[5]}"
 
-        # 转换月份名称为数字
+        # Convert month name to number
         local month=""
         local month_lower=$(echo "$month_str" | tr '[:upper:]' '[:lower:]')
         case "$month_lower" in
@@ -220,18 +220,18 @@ function parse_limit_str() {
             *) return 1 ;;
         esac
 
-        # 转换 12 小时制为 24 小时制
+        # Convert 12-hour format to 24-hour format
         if [[ "$ampm" == "pm" ]] && [[ "$hour" != "12" ]]; then
             hour=$((hour + 12))
         elif [[ "$ampm" == "am" ]] && [[ "$hour" == "12" ]]; then
             hour="00"
         fi
 
-        # 补齐两位数
+        # Pad to two digits
         day=$(printf "%02d" "$day")
         hour=$(printf "%02d" "$hour")
 
-        # 确定年份（如果月份小于当前月份，则为下一年）
+        # Determine year (if month is less than current month, use next year)
         local current_year=$(date +%Y)
         local current_month=$(date +%m)
         local year="$current_year"
@@ -240,7 +240,7 @@ function parse_limit_str() {
             year=$((current_year + 1))
         fi
 
-        # 返回 YYYYMMDDHH 格式
+        # Return YYYYMMDDHH format
         echo "${year}${month}${day}${hour}"
         return 0
     fi
@@ -249,28 +249,28 @@ function parse_limit_str() {
 }
 
 # ============================================
-# 账号切换
+# Account Switching
 # ============================================
 function oauth_switch() {
     local limit_param=""
 
-    # 解析参数
+    # Parse parameters
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --limit)
                 shift
                 if [[ $# -eq 0 ]]; then
-                    echo -e "${RED}错误: --limit 需要参数${NC}"
+                    echo -e "${RED}Error: --limit requires an argument${NC}"
                     exit 1
                 fi
                 limit_param="$1"
 
-                # 验证格式: 必须是10位数字 (YYYYMMDDHH)
+                # Validate format: must be 10 digits (YYYYMMDDHH)
                 if [[ ! "$limit_param" =~ ^[0-9]{10}$ ]]; then
-                    echo -e "${RED}错误: --limit 参数格式不正确${NC}"
-                    echo -e "${YELLOW}期望格式: YYYYMMDDHH (10位数字)${NC}"
-                    echo -e "${YELLOW}示例: 2025120111 (表示2025年12月01日11点)${NC}"
-                    echo -e "${YELLOW}您输入的: $limit_param${NC}"
+                    echo -e "${RED}Error: --limit argument format is incorrect${NC}"
+                    echo -e "${YELLOW}Expected format: YYYYMMDDHH (10 digits)${NC}"
+                    echo -e "${YELLOW}Example: 2025120111 (represents 2025 Dec 01 11am)${NC}"
+                    echo -e "${YELLOW}You entered: $limit_param${NC}"
                     exit 1
                 fi
 
@@ -279,174 +279,174 @@ function oauth_switch() {
             --limit-str)
                 shift
                 if [[ $# -eq 0 ]]; then
-                    echo -e "${RED}错误: --limit-str 需要参数${NC}"
+                    echo -e "${RED}Error: --limit-str requires an argument${NC}"
                     exit 1
                 fi
                 local limit_str="$1"
-                echo -e "${BLUE}解析限制字符串: $limit_str${NC}"
+                echo -e "${BLUE}Parsing limit string: $limit_str${NC}"
 
                 limit_param=$(parse_limit_str "$limit_str")
                 if [[ -z "$limit_param" ]]; then
-                    echo -e "${RED}错误: 无法解析限制字符串${NC}"
-                    echo -e "${YELLOW}期望格式: 'Weekly limit reached ∙ resets Nov 9, 5pm'${NC}"
-                    echo -e "${YELLOW}您输入的: $limit_str${NC}"
+                    echo -e "${RED}Error: Unable to parse limit string${NC}"
+                    echo -e "${YELLOW}Expected format: 'Weekly limit reached ∙ resets Nov 9, 5pm'${NC}"
+                    echo -e "${YELLOW}You entered: $limit_str${NC}"
                     exit 1
                 fi
 
-                echo -e "${GREEN}✓ 解析成功: $limit_param${NC}"
+                echo -e "${GREEN}✓ Parse successful: $limit_param${NC}"
                 shift
                 ;;
             *)
-                echo -e "${RED}错误: 未知参数 '$1'${NC}"
-                echo -e "${YELLOW}用法: gbox oauth claude switch [--limit YYYYMMDDHH] [--limit-str STRING]${NC}"
+                echo -e "${RED}Error: Unknown argument '$1'${NC}"
+                echo -e "${YELLOW}Usage: gbox oauth claude switch [--limit YYYYMMDDHH] [--limit-str STRING]${NC}"
                 exit 1
                 ;;
         esac
     done
 
-    echo -e "${GREEN}OAuth 账号切换（智能保留配置）${NC}"
+    echo -e "${GREEN}OAuth Account Switching (Smart Config Retention)${NC}"
     echo ""
 
-    # 检查当前配置文件是否存在
+    # Check if current config file exists
     local claude_json="$GBOX_CLAUDE_DIR/.claude.json"
     local credentials_json="$GBOX_CLAUDE_DIR/.credentials.json"
 
     if [[ ! -f "$claude_json" ]]; then
-        echo -e "${YELLOW}警告: 当前没有 Claude 配置文件${NC}"
-        echo -e "${YELLOW}将直接查找可用账号...${NC}"
+        echo -e "${YELLOW}Warning: No Claude config file currently${NC}"
+        echo -e "${YELLOW}Will search for available accounts directly...${NC}"
         echo ""
         local backup_suffix=""
         local email_safe=""
     else
-        # 提取当前账号的邮件地址(文件名安全格式)
+        # Extract current account email (filename-safe format)
         local email_safe=$(extract_email_safe)
 
         if [[ -z "$email_safe" ]]; then
-            echo -e "${YELLOW}警告: 无法从配置文件提取 email${NC}"
-            # 使用时间戳作为备份后缀
+            echo -e "${YELLOW}Warning: Unable to extract email from config file${NC}"
+            # Use timestamp as backup suffix
             email_safe="backup-$(date +%Y%m%d%H%M%S)"
         fi
 
-        echo -e "${BLUE}当前账号: ${email_safe}${NC}"
+        echo -e "${BLUE}Current account: ${email_safe}${NC}"
 
-        # 确定备份文件名
+        # Determine backup filename
         local backup_suffix="$email_safe"
         if [[ -n "$limit_param" ]]; then
-            # 提取日期部分 (YYYYMMDDHH)
+            # Extract date part (YYYYMMDDHH)
             local date_part="${limit_param:0:10}"
             backup_suffix="${email_safe}-${date_part}"
-            echo -e "${YELLOW}限制日期: ${date_part} (${limit_param})${NC}"
+            echo -e "${YELLOW}Limit date: ${date_part} (${limit_param})${NC}"
         fi
 
-        echo -e "${BLUE}备份后缀: ${backup_suffix}${NC}"
+        echo -e "${BLUE}Backup suffix: ${backup_suffix}${NC}"
         echo ""
 
-        # V5: 备份完整配置（包含 oauthAccount）
-        echo -e "${YELLOW}备份当前账号配置...${NC}"
+        # V5: Backup complete config (including oauthAccount)
+        echo -e "${YELLOW}Backing up current account config...${NC}"
 
-        # 备份完整 .claude.json（包含 oauthAccount）
+        # Backup complete .claude.json (including oauthAccount)
         local claude_backup="$GBOX_CLAUDE_DIR/.claude-${backup_suffix}.json"
         cp "$claude_json" "$claude_backup"
-        echo -e "${GREEN}✓ 已备份配置: .claude-${backup_suffix}.json${NC}"
+        echo -e "${GREEN}✓ Config backed up: .claude-${backup_suffix}.json${NC}"
 
-        # 备份 credentials.json（完整文件）
+        # Backup credentials.json (complete file)
         if [[ -f "$credentials_json" ]]; then
             cp "$credentials_json" "$GBOX_CLAUDE_DIR/.credentials-${backup_suffix}.json"
-            echo -e "${GREEN}✓ 已备份 Token: .credentials-${backup_suffix}.json${NC}"
+            echo -e "${GREEN}✓ Token backed up: .credentials-${backup_suffix}.json${NC}"
         fi
 
         echo ""
     fi
 
-    # 查找可用账号(排除当前账号)
-    echo -e "${YELLOW}查找可用账号...${NC}"
+    # Find available account (exclude current account)
+    echo -e "${YELLOW}Finding available accounts...${NC}"
     local available_account=$(find_available_account "$backup_suffix")
 
     if [[ -z "$available_account" ]]; then
-        echo -e "${RED}错误: 没有找到可用的账号${NC}"
+        echo -e "${RED}Error: No available accounts found${NC}"
         echo ""
-        echo -e "${YELLOW}可用账号规则:${NC}"
-        echo -e "  1. 无限制账号: .claude-{email-safe}.json"
-        echo -e "  2. 已过期限制: .claude-{email-safe}-{YYYYMMDDHH}.json (日期时间已过)"
-        echo -e "  email-safe 示例: team-at-gravtice-com"
+        echo -e "${YELLOW}Available account rules:${NC}"
+        echo -e "  1. Unlimited account: .claude-{email-safe}.json"
+        echo -e "  2. Limit expired: .claude-{email-safe}-{YYYYMMDDHH}.json (date/time has passed)"
+        echo -e "  email-safe example: team-at-gravtice-com"
         echo ""
-        echo -e "${BLUE}提示: 请检查 ${GBOX_CLAUDE_DIR} 目录${NC}"
+        echo -e "${BLUE}Hint: Please check the ${GBOX_CLAUDE_DIR} directory${NC}"
         exit 1
     fi
 
-    echo -e "${GREEN}✓ 找到可用账号: ${available_account}${NC}"
+    echo -e "${GREEN}✓ Found available account: ${available_account}${NC}"
     echo ""
 
-    # V5: 切换账号（只替换 oauthAccount 字段，保留其他配置）
-    echo -e "${YELLOW}切换 OAuth 账号（保留其他配置）...${NC}"
+    # V5: Switch account (only replace oauthAccount field, keep other configs)
+    echo -e "${YELLOW}Switching OAuth account (preserving other configs)...${NC}"
 
     local claude_source="$GBOX_CLAUDE_DIR/.claude-${available_account}.json"
     local credentials_source="$GBOX_CLAUDE_DIR/.credentials-${available_account}.json"
 
     if [[ ! -f "$claude_source" ]]; then
-        echo -e "${RED}错误: 配置备份文件不存在: $claude_source${NC}"
+        echo -e "${RED}Error: Config backup file does not exist: $claude_source${NC}"
         exit 1
     fi
 
-    # 恢复 credentials.json
+    # Restore credentials.json
     if [[ -f "$credentials_source" ]]; then
         cp "$credentials_source" "$credentials_json"
-        echo -e "${GREEN}✓ 已更新 .credentials.json${NC}"
+        echo -e "${GREEN}✓ Updated .credentials.json${NC}"
     else
-        echo -e "${YELLOW}⚠ 警告: credentials 备份文件不存在，跳过${NC}"
+        echo -e "${YELLOW}⚠ Warning: credentials backup file not found, skipping${NC}"
     fi
 
-    # 提取 .claude-{suffix}.json 中的 oauthAccount，替换 .claude.json 中的 oauthAccount
+    # Extract oauthAccount from .claude-{suffix}.json, replace oauthAccount in .claude.json
     jq --argfile oauth_data "$claude_source" \
        '.oauthAccount = $oauth_data.oauthAccount' \
        "$claude_json" > "$claude_json.tmp"
     mv "$claude_json.tmp" "$claude_json"
-    echo -e "${GREEN}✓ 已更新 .claude.json 的 OAuth 字段（其他配置保留）${NC}"
+    echo -e "${GREEN}✓ Updated .claude.json OAuth field (other configs preserved)${NC}"
 
     echo ""
 
-    # 显示恢复后的 token 状态
-    echo -e "${YELLOW}Token 状态:${NC}"
+    # Show token status after recovery
+    echo -e "${YELLOW}Token status:${NC}"
     local token_status=$(check_token_expiry "$credentials_json")
 
     case "$token_status" in
         valid:*)
             local hours="${token_status#valid:}"
-            echo -e "${GREEN}✓ Token 有效 (剩余约 $hours 小时)${NC}"
+            echo -e "${GREEN}✓ Token valid (approx $hours hours remaining)${NC}"
             ;;
         expired:*)
             local hours="${token_status#expired:}"
-            echo -e "${YELLOW}⚠ Token 已过期 (过期约 $hours 小时)${NC}"
-            echo -e "${YELLOW}  下次使用时需要重新认证 Claude Code${NC}"
+            echo -e "${YELLOW}⚠ Token expired (expired approx $hours hours ago)${NC}"
+            echo -e "${YELLOW}  Next use will require Claude Code re-authentication${NC}"
             ;;
         *)
-            echo -e "${YELLOW}⚠ 无法确定 token 状态${NC}"
+            echo -e "${YELLOW}⚠ Unable to determine token status${NC}"
             ;;
     esac
     echo ""
 
-    # 删除已使用的备份文件
-    echo -e "${YELLOW}清理已使用的账号备份...${NC}"
+    # Delete used backup files
+    echo -e "${YELLOW}Cleaning up used account backups...${NC}"
     rm -f "$claude_source"
-    echo -e "${GREEN}✓ 已删除: .claude-${available_account}.json${NC}"
+    echo -e "${GREEN}✓ Deleted: .claude-${available_account}.json${NC}"
 
     if [[ -f "$credentials_source" ]]; then
         rm -f "$credentials_source"
-        echo -e "${GREEN}✓ 已删除: .credentials-${available_account}.json${NC}"
+        echo -e "${GREEN}✓ Deleted: .credentials-${available_account}.json${NC}"
     fi
     echo ""
 
-    echo -e "${GREEN}✓ OAuth 账号切换完成${NC}"
+    echo -e "${GREEN}✓ OAuth account switching complete${NC}"
     echo ""
-    echo -e "${BLUE}切换到账号: ${available_account}${NC}"
-    echo -e "${GREEN}✓ 已保留: MCP 配置、UI 设置、历史记录等${NC}"
-    echo -e "${YELLOW}提示: 新的 Claude Code 会话将使用此账号${NC}"
+    echo -e "${BLUE}Switched to account: ${available_account}${NC}"
+    echo -e "${GREEN}✓ Preserved: MCP configs, UI settings, history, etc${NC}"
+    echo -e "${YELLOW}Hint: New Claude Code session will use this account${NC}"
 }
 
 # ============================================
-# 命令处理
+# Command Handling
 # ============================================
-# OAuth 命令处理（入口）
+# OAuth command handler (entry point)
 function handle_oauth_command() {
     local agent="${1:-help}"
     shift || true
@@ -457,32 +457,32 @@ function handle_oauth_command() {
             ;;
         help|--help|-h)
             cat <<EOF
-${GREEN}gbox oauth - OAuth 账号管理${NC}
+${GREEN}gbox oauth - OAuth Account Management${NC}
 
-${YELLOW}用法:${NC}
-    gbox oauth <agent> <subcommand>    管理指定 agent 的 OAuth 账号
-    gbox oauth help                     显示此帮助信息
+${YELLOW}Usage:${NC}
+    gbox oauth <agent> <subcommand>    Manage OAuth account for specified agent
+    gbox oauth help                     Show this help message
 
-${YELLOW}支持的 Agent:${NC}
-    claude    Claude Code OAuth 管理
+${YELLOW}Supported Agents:${NC}
+    claude    Claude Code OAuth Management
 
-${YELLOW}示例:${NC}
+${YELLOW}Examples:${NC}
     gbox oauth claude switch [--limit YYYYMMDDHH | --limit-str STRING]
-                                                       切换 Claude 账号
-    gbox oauth claude status                          查看 Claude 账号状态
-    gbox oauth claude help                            显示 Claude OAuth 帮助
+                                                       Switch Claude account
+    gbox oauth claude status                          Check Claude account status
+    gbox oauth claude help                            Show Claude OAuth help
 
-${YELLOW}详细说明:${NC}
-    使用 ${GREEN}gbox oauth claude help${NC} 查看 Claude OAuth 管理的详细说明
+${YELLOW}Details:${NC}
+    Use ${GREEN}gbox oauth claude help${NC} to view detailed Claude OAuth management instructions
 EOF
             ;;
         *)
-            echo -e "${RED}错误: 未知的 agent '$agent'${NC}"
+            echo -e "${RED}Error: Unknown agent '$agent'${NC}"
             echo ""
-            echo -e "${YELLOW}支持的 agent:${NC}"
-            echo -e "  claude    Claude Code OAuth 管理"
+            echo -e "${YELLOW}Supported agents:${NC}"
+            echo -e "  claude    Claude Code OAuth Management"
             echo ""
-            echo -e "${YELLOW}示例:${NC}"
+            echo -e "${YELLOW}Examples:${NC}"
             echo -e "  gbox oauth claude switch"
             echo -e "  gbox oauth claude status"
             exit 1
@@ -490,7 +490,7 @@ EOF
     esac
 }
 
-# OAuth Claude 命令处理
+# OAuth Claude command handler
 function handle_oauth_claude_command() {
     local subcommand="${1:-help}"
     shift || true
@@ -500,158 +500,158 @@ function handle_oauth_claude_command() {
             oauth_switch "$@"
             ;;
         status)
-            # 检查当前账号的 token 状态
+            # Check token status of current account
             local credentials_json="$GBOX_CLAUDE_DIR/.credentials.json"
             local claude_json="$GBOX_CLAUDE_DIR/.claude.json"
 
-            echo -e "${GREEN}OAuth Token 状态检查${NC}"
+            echo -e "${GREEN}OAuth Token Status Check${NC}"
             echo ""
 
-            # 获取当前账号邮箱
+            # Get current account email
             local email=$(jq -r '.oauthAccount.emailAddress // .oauthAccount.Email // .Email // .email // .emailAddress // empty' "$claude_json" 2>/dev/null)
             if [[ -n "$email" ]]; then
-                echo -e "${BLUE}当前账号: ${email}${NC}"
+                echo -e "${BLUE}Current account: ${email}${NC}"
             else
-                echo -e "${YELLOW}⚠ 无法获取账号邮箱${NC}"
+                echo -e "${YELLOW}⚠ Unable to retrieve account email${NC}"
             fi
 
-            # 检查 token 状态
+            # Check token status
             local token_status=$(check_token_expiry "$credentials_json")
 
             case "$token_status" in
                 valid:*)
                     local hours="${token_status#valid:}"
                     local expires_at=$(jq -r '.claudeAiOauth.expiresAt' "$credentials_json" 2>/dev/null)
-                    local expire_date=$(date -r $((expires_at / 1000)) '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "未知")
-                    echo -e "${GREEN}✓ Token 有效${NC}"
-                    echo -e "${BLUE}剩余时间: 约 $hours 小时${NC}"
-                    echo -e "${BLUE}过期时间: $expire_date${NC}"
+                    local expire_date=$(date -r $((expires_at / 1000)) '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "Unknown")
+                    echo -e "${GREEN}✓ Token valid${NC}"
+                    echo -e "${BLUE}Remaining time: approx $hours hours${NC}"
+                    echo -e "${BLUE}Expiration time: $expire_date${NC}"
                     ;;
                 expired:*)
                     local hours="${token_status#expired:}"
-                    echo -e "${RED}✗ Token 已过期${NC}"
-                    echo -e "${YELLOW}过期时间: 约 $hours 小时前${NC}"
-                    echo -e "${YELLOW}建议: 运行 'claude' 命令重新认证${NC}"
+                    echo -e "${RED}✗ Token expired${NC}"
+                    echo -e "${YELLOW}Expired: approx $hours hours ago${NC}"
+                    echo -e "${YELLOW}Recommendation: Run 'claude' command to re-authenticate${NC}"
                     ;;
                 unknown)
-                    echo -e "${YELLOW}⚠ 无法确定 token 状态${NC}"
-                    echo -e "${YELLOW}可能原因: credentials.json 格式异常${NC}"
+                    echo -e "${YELLOW}⚠ Unable to determine token status${NC}"
+                    echo -e "${YELLOW}Possible reason: credentials.json format anomaly${NC}"
                     ;;
                 missing)
-                    echo -e "${RED}✗ credentials.json 文件不存在${NC}"
-                    echo -e "${YELLOW}建议: 运行 'claude' 命令进行首次认证${NC}"
+                    echo -e "${RED}✗ credentials.json file does not exist${NC}"
+                    echo -e "${YELLOW}Recommendation: Run 'claude' command for initial authentication${NC}"
                     ;;
             esac
             echo ""
 
-            # 显示备份账号信息
+            # Show backup account information
             local backup_count=$(ls -1 "$GBOX_CLAUDE_DIR"/.oauth-account-*.json 2>/dev/null | wc -l | tr -d ' ')
             if [[ $backup_count -gt 0 ]]; then
-                echo -e "${BLUE}备份账号数量: $backup_count${NC}"
-                echo -e "${YELLOW}使用 'ls -la ~/.gbox/claude/.oauth-account-*.json' 查看详情${NC}"
+                echo -e "${BLUE}Backup account count: $backup_count${NC}"
+                echo -e "${YELLOW}Use 'ls -la ~/.gbox/claude/.oauth-account-*.json' for details${NC}"
             else
-                echo -e "${YELLOW}暂无备份账号${NC}"
+                echo -e "${YELLOW}No backup accounts currently${NC}"
             fi
             ;;
         help|--help|-h)
             cat <<EOF
-${GREEN}gbox oauth claude - Claude OAuth 账号管理${NC}
+${GREEN}gbox oauth claude - Claude OAuth Account Management${NC}
 
-${YELLOW}用法:${NC}
+${YELLOW}Usage:${NC}
     gbox oauth claude switch [--limit YYYYMMDDHH | --limit-str STRING]
     gbox oauth claude status
     gbox oauth claude help
 
-${YELLOW}说明:${NC}
+${YELLOW}Description:${NC}
 
-    ${BLUE}账号切换 (switch) - 智能保留配置${NC}
-    支持 Claude Code 的多账号管理，在账号达到使用限制时切换到其他可用账号。
+    ${BLUE}Account Switching (switch) - Smart Config Retention${NC}
+    Supports multi-account management for Claude Code. Switch to another available account when current account reaches usage limit.
 
-    ${GREEN}✨ 新特性：只切换 OAuth 信息，保留其他配置${NC}
-    - ✅ 保留 MCP 配置（所有容器共享）
-    - ✅ 保留 UI 设置（主题、快捷键等）
-    - ✅ 保留使用历史和统计
-    - ✅ 只替换 OAuth 认证信息
+    ${GREEN}✨ New Feature: Only switch OAuth info, preserve other configs${NC}
+    - ✅ Preserve MCP configs (shared across all containers)
+    - ✅ Preserve UI settings (theme, shortcuts, etc)
+    - ✅ Preserve usage history and statistics
+    - ✅ Only replace OAuth authentication info
 
-    ${YELLOW}使用场景:${NC}
-    1. 账号达到限制(指定时间): gbox oauth claude switch --limit 2025120111
-       - 备份当前 OAuth 为 .oauth-account-{email-safe}-2025120111.json
-       - 切换到无限制或限制已解除的账号
-       - 保留所有其他配置（MCP、UI 等）
-       - email-safe: 邮件地址的文件名安全格式(如 team-at-gravtice-com)
+    ${YELLOW}Use Cases:${NC}
+    1. Account reached limit (specified time): gbox oauth claude switch --limit 2025120111
+       - Backup current OAuth as .oauth-account-{email-safe}-2025120111.json
+       - Switch to unlimited or limit-lifted account
+       - Preserve all other configs (MCP, UI, etc)
+       - email-safe: filename-safe format of email (e.g. team-at-gravtice-com)
 
-    2. 账号达到限制(自动解析): gbox oauth claude switch --limit-str "Weekly limit reached ∙ resets Nov 9, 5pm"
-       - 自动从限制提示中提取时间并转换为 YYYYMMDDHH 格式
-       - 其他行为同方式 1
+    2. Account reached limit (auto-parse): gbox oauth claude switch --limit-str "Weekly limit reached ∙ resets Nov 9, 5pm"
+       - Auto-extract time from limit message and convert to YYYYMMDDHH format
+       - Other behavior same as method 1
 
-    3. 主动切换账号: gbox oauth claude switch
-       - 备份当前 OAuth 为 .oauth-account-{email-safe}.json
-       - 切换到无限制或限制已解除的账号
-       - 保留所有其他配置
+    3. Manually switch account: gbox oauth claude switch
+       - Backup current OAuth as .oauth-account-{email-safe}.json
+       - Switch to unlimited or limit-lifted account
+       - Preserve all other configs
 
-    ${YELLOW}账号选择优先级:${NC}
-    1. 优先使用无限制账号 (.oauth-account-{email-safe}.json)
-    2. 其次使用限制已解除的账号 (.oauth-account-{email-safe}-YYYYMMDDHH.json)
-    3. 同时优先选择 token 未过期的账号
+    ${YELLOW}Account Selection Priority:${NC}
+    1. Prefer unlimited accounts (.oauth-account-{email-safe}.json)
+    2. Then use limit-lifted accounts (.oauth-account-{email-safe}-YYYYMMDDHH.json)
+    3. Also prefer accounts with valid tokens
 
-    ${YELLOW}Token 管理:${NC}
-    - 切换账号时会自动检查 token 是否过期
-    - 如果 token 已过期，会提示重新认证
-    - Token 过期是正常现象，OAuth token 需要定期刷新
+    ${YELLOW}Token Management:${NC}
+    - Token expiration is automatically checked when switching
+    - If token is expired, re-authentication is prompted
+    - Token expiration is normal, OAuth tokens need periodic refresh
 
-    ${YELLOW}文件说明:${NC}
-    - .oauth-account-*.json        OAuth 账号信息（仅 oauthAccount 字段）
-    - .credentials-*.json          OAuth token（accessToken, refreshToken）
-    - .claude.json.backup-*        完整配置备份（灾难恢复用）
-    - .claude.json                 当前配置（包含 OAuth + MCP + UI 等）
+    ${YELLOW}File Description:${NC}
+    - .oauth-account-*.json        OAuth account info (oauthAccount field only)
+    - .credentials-*.json          OAuth token (accessToken, refreshToken)
+    - .claude.json.backup-*        Complete config backup (for disaster recovery)
+    - .claude.json                 Current config (contains OAuth + MCP + UI, etc)
 
-    ${BLUE}Token 状态检查 (status)${NC}
-    查看当前账号的 OAuth token 状态，包括:
-    - 当前登录的账号邮箱
-    - Token 有效期和剩余时间
-    - 备份账号数量
+    ${BLUE}Token Status Check (status)${NC}
+    Check OAuth token status of current account, including:
+    - Currently logged-in account email
+    - Token validity and remaining time
+    - Number of backup accounts
 
-${YELLOW}示例:${NC}
+${YELLOW}Examples:${NC}
 
-    # 检查当前 token 状态
+    # Check current token status
     gbox oauth claude status
 
-    # 账号达到限制,限制解除时间为 2025年12月01日11点
+    # Account reached limit, limit reset time is 2025 Dec 01 11am
     gbox oauth claude switch --limit 2025120111
-    # 生成备份: .oauth-account-team-at-gravtice-com-2025120111.json
+    # Generated backup: .oauth-account-team-at-gravtice-com-2025120111.json
 
-    # 账号达到限制,使用限制字符串自动解析
+    # Account reached limit, auto-parse from limit string
     gbox oauth claude switch --limit-str "Weekly limit reached ∙ resets Nov 9, 5pm"
-    # 自动解析为 2025110917，生成备份: .oauth-account-team-at-gravtice-com-2025110917.json
+    # Auto-parse to 2025110917, generated backup: .oauth-account-team-at-gravtice-com-2025110917.json
 
-    # 主动切换账号(无限制)
+    # Manually switch to unlimited account
     gbox oauth claude switch
-    # 生成备份: .oauth-account-team-at-gravtice-com.json
+    # Generated backup: .oauth-account-team-at-gravtice-com.json
 
-    # 查看OAuth备份账号
+    # View OAuth backup accounts
     ls -la ~/.gbox/claude/.oauth-account-*.json
 
-${YELLOW}配置文件位置:${NC}
+${YELLOW}Config File Location:${NC}
     ${BLUE}${GBOX_CLAUDE_DIR}${NC}
 
-    文件格式:
-    - .claude.json                          当前使用的配置
-    - .credentials.json                     当前使用的凭证
-    - .claude.json-{email-safe}             无限制账号备份
+    File Format:
+    - .claude.json                          Current config in use
+    - .credentials.json                     Current credentials in use
+    - .claude.json-{email-safe}             Unlimited account backup
     - .credentials.json-{email-safe}
-    - .claude.json-{email-safe}-YYYYMMDDHH  有限制账号备份
+    - .claude.json-{email-safe}-YYYYMMDDHH  Limited account backup
     - .credentials.json-{email-safe}-YYYYMMDDHH
 
-    {email-safe} 格式说明:
-    - 原始: team@gravtice.com
-    - 转换: team-at-gravtice-com (小写, @ -> -at-, . -> -, 其他特殊字符 -> -)
+    {email-safe} Format Explanation:
+    - Original: team@gravtice.com
+    - Converted: team-at-gravtice-com (lowercase, @ -> -at-, . -> -, other special chars -> -)
 EOF
             ;;
         *)
-            echo -e "${RED}错误: 未知的 oauth 子命令 '$subcommand'${NC}"
+            echo -e "${RED}Error: Unknown oauth subcommand '$subcommand'${NC}"
             echo ""
-            echo -e "${YELLOW}用法: gbox oauth <subcommand> [options]${NC}"
-            echo -e "${YELLOW}可用子命令: switch, help${NC}"
+            echo -e "${YELLOW}Usage: gbox oauth <subcommand> [options]${NC}"
+            echo -e "${YELLOW}Available subcommands: switch, help${NC}"
             exit 1
             ;;
     esac

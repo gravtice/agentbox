@@ -1,12 +1,12 @@
 #!/bin/bash
-# lib/docker.sh - Docker 基础操作
-# 这个模块负责 Docker 网络管理、容器状态检查和 worktree 目录管理
+# lib/docker.sh - Docker basic operations
+# This module handles Docker network management, container state checking, and worktree directory management
 
 # ============================================
-# Docker Exec 交互标志
+# Docker Exec interaction flags
 # ============================================
-# 在非 TTY 环境中使用 -t 会导致 "the input device is not a TTY" 报错。
-# 统一在加载脚本时根据当前环境确定 docker exec 应使用的交互参数。
+# Using -t in non-TTY environments causes "the input device is not a TTY" error.
+# Determine the appropriate docker exec interaction parameters based on the current environment at script load time.
 if [[ -t 0 && -t 1 ]]; then
     DOCKER_EXEC_TTY_ARGS=(-it)
 else
@@ -14,28 +14,28 @@ else
 fi
 
 # ============================================
-# Docker 网络管理
+# Docker network management
 # ============================================
 
-# 确保 Docker 网络存在
+# Ensure Docker network exists
 function ensure_network() {
     if ! docker network inspect "$NETWORK_NAME" &>/dev/null; then
-        echo -e "${YELLOW}创建Docker网络: $NETWORK_NAME${NC}"
+        echo -e "${YELLOW}Creating Docker network: $NETWORK_NAME${NC}"
         docker network create "$NETWORK_NAME"
     fi
 }
 
 # ============================================
-# 容器状态检查
+# Container state checking
 # ============================================
 
-# 检查容器是否正在运行
+# Check if container is running
 function is_container_running() {
     local container_name="$1"
     docker ps --format '{{.Names}}' | grep -q "^${container_name}$"
 }
 
-# 等待容器就绪
+# Wait for container to be ready
 function wait_for_container_ready() {
     local container_name="$1"
     local attempts="${2:-${GBOX_READY_ATTEMPTS:-30}}"
@@ -54,26 +54,26 @@ function wait_for_container_ready() {
 }
 
 # ============================================
-# Worktree 目录管理
+# Worktree directory management
 # ============================================
 
-# 检测并获取主仓库目录
-# 如果当前目录是 worktree，返回主仓库目录
-# 如果当前目录是主仓库或普通目录，返回自身
-# 目录规范：主目录 /path/to/project -> worktrees目录 /path/to/project-worktrees
+# Detect and get main repository directory
+# If current directory is a worktree, return the main repository directory
+# If current directory is a main repository or regular directory, return itself
+# Directory convention: main directory /path/to/project -> worktrees directory /path/to/project-worktrees
 function get_main_repo_dir() {
     local work_dir="$1"
 
-    # 检查是否是 git worktree
+    # Check if it is a git worktree
     if [[ -f "$work_dir/.git" ]]; then
-        # 如果 .git 是文件（而不是目录），可能是 worktree
+        # If .git is a file (not a directory), it might be a worktree
         local git_content=$(cat "$work_dir/.git" 2>/dev/null)
         if [[ "$git_content" =~ ^gitdir:\ (.+)$ ]]; then
-            # 这是一个 worktree，尝试通过 git 获取主仓库路径
+            # This is a worktree, try to get the main repository path via git
             local main_worktree=$(cd "$work_dir" && git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
             if [[ -n "$main_worktree" ]]; then
-                # git-common-dir 返回的是 .git/worktrees/<name> 或 .git
-                # 需要提取主仓库根目录
+                # git-common-dir returns .git/worktrees/<name> or .git
+                # Need to extract the main repository root directory
                 main_worktree="${main_worktree%/.git*}"
                 if [[ -d "$main_worktree" ]]; then
                     echo "$main_worktree"
@@ -83,13 +83,13 @@ function get_main_repo_dir() {
         fi
     fi
 
-    # 如果不是 worktree，或者无法检测主仓库，检查是否在 worktrees 目录下
-    # 通过目录命名规范推断：如果当前目录的父目录名以 -worktrees 结尾
+    # If not a worktree or unable to detect main repository, check if in worktrees directory
+    # Infer by directory naming convention: if parent directory name ends with -worktrees
     local parent_dir=$(dirname "$work_dir")
     local parent_name=$(basename "$parent_dir")
 
     if [[ "$parent_name" =~ ^(.+)-worktrees$ ]]; then
-        # 父目录是 worktrees 目录，推断主目录
+        # Parent directory is worktrees directory, infer main directory
         local main_name="${BASH_REMATCH[1]}"
         local grandparent=$(dirname "$parent_dir")
         local main_dir="$grandparent/$main_name"
@@ -100,25 +100,25 @@ function get_main_repo_dir() {
         fi
     fi
 
-    # 默认返回工作目录本身（不是 worktree）
+    # Default: return the working directory itself (not a worktree)
     echo "$work_dir"
 }
 
-# 根据工作目录生成对应的 worktrees 目录路径
-# 自动检测主仓库目录，确保规范：主目录 /path/to/project -> worktrees目录 /path/to/project-worktrees
+# Generate worktrees directory path based on working directory
+# Automatically detect main repository directory, ensure convention: main directory /path/to/project -> worktrees directory /path/to/project-worktrees
 function get_worktree_dir() {
     local work_dir="$1"
 
-    # 先获取主仓库目录
+    # First get the main repository directory
     local main_dir=$(get_main_repo_dir "$work_dir")
 
-    # 返回主仓库对应的 worktrees 目录
+    # Return the worktrees directory corresponding to the main repository
     echo "${main_dir}-worktrees"
 }
 
-# 确保 worktrees 目录存在
-# 如果目录不存在则创建，如果已存在则跳过
-# 返回值：worktrees 目录路径
+# Ensure worktrees directory exists
+# Create if directory doesn't exist, skip if already exists
+# Return value: worktrees directory path
 function ensure_worktree_dir() {
     local work_dir="$1"
     local quiet_mode="${2:-0}"
@@ -127,7 +127,7 @@ function ensure_worktree_dir() {
     if [[ ! -d "$worktree_dir" ]]; then
         mkdir -p "$worktree_dir"
         if (( quiet_mode == 0 )); then
-            echo -e "${GREEN}✓ 创建 worktrees 目录: $worktree_dir${NC}" >&2
+            echo -e "${GREEN}✓ Creating worktrees directory: $worktree_dir${NC}" >&2
         fi
     fi
 

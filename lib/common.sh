@@ -1,61 +1,61 @@
 #!/bin/bash
-# lib/common.sh - 通用工具和常量
-# 这个模块包含全局常量、颜色定义、环境检查和工具函数
+# lib/common.sh - Common utilities and constants
+# This module contains global constants, color definitions, environment checks and utility functions
 
 # ============================================
-# 全局常量定义
+# Global constants definition
 # ============================================
 
-# 从 VERSION 文件读取版本号
+# Read version from VERSION file
 if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
     VERSION=$(cat "$SCRIPT_DIR/VERSION" | tr -d '[:space:]')
 else
-    # 回退到默认版本号
+    # Fallback to default version
     VERSION="1.0.0"
-    echo "警告: 找不到 VERSION 文件，使用默认版本号 $VERSION" >&2
+    echo "Warning: VERSION file not found, using default version $VERSION" >&2
 fi
 
-# 镜像配置
+# Image configuration
 IMAGE_NAME="gravtice/agentbox"
 IMAGE_TAG="$VERSION"
 IMAGE_FULL="${IMAGE_NAME}:${IMAGE_TAG}"
 
-# 容器配置
+# Container configuration
 CONTAINER_PREFIX="gbox"
 NETWORK_NAME="gbox-network"
 
-# 目录配置
-GBOX_CONFIG_DIR="$HOME/.gbox"                     # gbox 配置根目录
-GBOX_CLAUDE_DIR="$GBOX_CONFIG_DIR/claude"         # Claude 配置目录
-GBOX_CODEX_DIR="$GBOX_CONFIG_DIR/codex"           # Codex 配置目录
-GBOX_GEMINI_DIR="$GBOX_CONFIG_DIR/gemini"         # Gemini 配置目录
-GBOX_HAPPY_DIR="$GBOX_CONFIG_DIR/happy"           # Happy 配置目录
-STATE_FILE="$GBOX_CONFIG_DIR/containers.json"     # 容器状态文件
-LOGS_DIR="$GBOX_CONFIG_DIR/logs"                  # 日志目录
-CACHE_DIR="$GBOX_CONFIG_DIR/cache"                # 缓存目录
+# Directory configuration
+GBOX_CONFIG_DIR="$HOME/.gbox"                     # gbox config root directory
+GBOX_CLAUDE_DIR="$GBOX_CONFIG_DIR/claude"         # Claude config directory
+GBOX_CODEX_DIR="$GBOX_CONFIG_DIR/codex"           # Codex config directory
+GBOX_GEMINI_DIR="$GBOX_CONFIG_DIR/gemini"         # Gemini config directory
+GBOX_HAPPY_DIR="$GBOX_CONFIG_DIR/happy"           # Happy config directory
+STATE_FILE="$GBOX_CONFIG_DIR/containers.json"     # Container state file
+LOGS_DIR="$GBOX_CONFIG_DIR/logs"                  # Logs directory
+CACHE_DIR="$GBOX_CONFIG_DIR/cache"                # Cache directory
 
-# 资源限制配置（默认值，可被环境变量或命令行参数覆盖）
+# Resource limit configuration (default values, can be overridden by environment variables or command-line arguments)
 DEFAULT_MEMORY_LIMIT="4g"
 DEFAULT_CPU_LIMIT="2"
 
-# 实际使用的资源限制（优先级：命令行 > 环境变量 > 默认值）
+# Actual resource limits (priority: command-line > environment variable > default)
 MEMORY_LIMIT="${GBOX_MEMORY:-${DEFAULT_MEMORY_LIMIT}}"
 CPU_LIMIT="${GBOX_CPU:-${DEFAULT_CPU_LIMIT}}"
-CONTAINER_PORTS="${GBOX_PORTS:-}"                 # 端口映射配置
-CONTAINER_KEEP="${GBOX_KEEP:-false}"              # 是否保留容器
-CONTAINER_NAME="${GBOX_NAME:-}"                   # 自定义容器名
-CONTAINER_REF_DIRS="${GBOX_REF_DIRS:-}"           # 只读参考目录列表
-AGENT_PROXY="${GBOX_PROXY:-}"                     # 代理地址（传递给 Agent）
+CONTAINER_PORTS="${GBOX_PORTS:-}"                 # Port mapping configuration
+CONTAINER_KEEP="${GBOX_KEEP:-false}"              # Whether to keep container after exit
+CONTAINER_NAME="${GBOX_NAME:-}"                   # Custom container name
+CONTAINER_REF_DIRS="${GBOX_REF_DIRS:-}"           # Read-only reference directories list
+AGENT_PROXY="${GBOX_PROXY:-}"                     # Proxy address (passed to Agent)
 ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"        # Anthropic API Key
-DEBUG="${DEBUG:-}"                                # 调试模式（如 happy:*）
-REF_DIR_MOUNT_ARGS=()                             # Docker -v 参数（数组）
-REF_DIR_SOURCE_DIRS=()                            # 用于展示的参考目录列表
+DEBUG="${DEBUG:-}"                                # Debug mode (e.g., happy:*)
+REF_DIR_MOUNT_ARGS=()                             # Docker -v arguments (array)
+REF_DIR_SOURCE_DIRS=()                            # Reference directories list for display
 
-# 支持的 AI Agent 列表
+# List of supported AI Agents
 SUPPORTED_AGENTS=("claude" "codex" "gemini")
 
 # ============================================
-# 颜色输出
+# Color output
 # ============================================
 
 RED='\033[0;31m'
@@ -65,106 +65,106 @@ BLUE='\033[0;34m'
 NC='\033[0m'  # No Color
 
 # ============================================
-# 系统检测
+# System detection
 # ============================================
 
-# 检查是否支持 flock（Linux 有，macOS 默认没有）
+# Check if flock is supported (available on Linux, not by default on macOS)
 HAS_FLOCK=0
 if command -v flock &> /dev/null; then
     HAS_FLOCK=1
 fi
 
 # ============================================
-# 环境检查函数
+# Environment check functions
 # ============================================
 
 function check_docker() {
     if ! command -v docker &> /dev/null; then
-        echo -e "${RED}错误: Docker未安装或未运行${NC}"
+        echo -e "${RED}Error: Docker is not installed or not running${NC}"
         exit 1
     fi
 }
 
 function check_jq() {
     if ! command -v jq &> /dev/null; then
-        echo -e "${RED}错误: jq未安装，请先安装: brew install jq${NC}"
+        echo -e "${RED}Error: jq is not installed, please install it first: brew install jq${NC}"
         exit 1
     fi
 }
 
 # ============================================
-# 环境变量加载
+# Environment variable loading
 # ============================================
 
-# 加载 .env 文件
-# 优先级: 命令行参数 > .env.local > .env > 默认值
+# Load .env file
+# Priority: command-line parameters > .env.local > .env > defaults
 function load_env_files() {
     local env_file="$SCRIPT_DIR/.env"
     local env_local_file="$SCRIPT_DIR/.env.local"
 
-    # 加载 .env 文件
+    # Load .env file
     if [[ -f "$env_file" ]]; then
         if [[ "${GBOX_DEBUG:-0}" == "1" ]]; then
-            echo -e "${BLUE}加载配置文件: $env_file${NC}" >&2
+            echo -e "${BLUE}Loading config file: $env_file${NC}" >&2
         fi
 
-        # 逐行读取并导出变量（跳过注释和空行）
+        # Read and export variables line by line (skip comments and blank lines)
         while IFS= read -r line || [[ -n "$line" ]]; do
-            # 跳过注释和空行
+            # Skip comments and blank lines
             [[ "$line" =~ ^[[:space:]]*# ]] && continue
             [[ -z "${line// }" ]] && continue
 
-            # 解析变量名和值
+            # Parse variable name and value
             if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
                 local var_name="${BASH_REMATCH[1]}"
                 local var_value="${BASH_REMATCH[2]}"
 
-                # 移除值两边的引号（如果有）
+                # Remove quotes around values (if any)
                 var_value="${var_value#\"}"
                 var_value="${var_value%\"}"
                 var_value="${var_value#\'}"
                 var_value="${var_value%\'}"
 
-                # 只在变量未设置时才导出（命令行参数优先）
+                # Only export if variable is not set (command-line parameters take precedence)
                 if [[ -z "${!var_name}" ]]; then
                     export "$var_name=$var_value"
                     if [[ "${GBOX_DEBUG:-0}" == "1" ]]; then
-                        echo -e "${BLUE}  导出: $var_name=$var_value${NC}" >&2
+                        echo -e "${BLUE}  Export: $var_name=$var_value${NC}" >&2
                     fi
                 fi
             fi
         done < "$env_file"
     fi
 
-    # 加载 .env.local 文件（优先级更高）
+    # Load .env.local file (higher priority)
     if [[ -f "$env_local_file" ]]; then
         if [[ "${GBOX_DEBUG:-0}" == "1" ]]; then
-            echo -e "${BLUE}加载配置文件: $env_local_file${NC}" >&2
+            echo -e "${BLUE}Loading config file: $env_local_file${NC}" >&2
         fi
 
-        # 逐行读取并导出变量（跳过注释和空行）
+        # Read and export variables line by line (skip comments and blank lines)
         while IFS= read -r line || [[ -n "$line" ]]; do
-            # 跳过注释和空行
+            # Skip comments and blank lines
             [[ "$line" =~ ^[[:space:]]*# ]] && continue
             [[ -z "${line// }" ]] && continue
 
-            # 解析变量名和值
+            # Parse variable name and value
             if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
                 local var_name="${BASH_REMATCH[1]}"
                 local var_value="${BASH_REMATCH[2]}"
 
-                # 移除值两边的引号（如果有）
+                # Remove quotes around values (if any)
                 var_value="${var_value#\"}"
                 var_value="${var_value%\"}"
                 var_value="${var_value#\'}"
                 var_value="${var_value%\'}"
 
-                # .env.local 会覆盖 .env 中的设置，但不会覆盖命令行参数
-                # 通过检查变量是否在环境中已存在来判断是否来自命令行
+                # .env.local overrides .env settings, but not command-line parameters
+                # Check if variable already exists in environment to determine if it came from command-line
                 if [[ -z "${!var_name}" ]]; then
                     export "$var_name=$var_value"
                     if [[ "${GBOX_DEBUG:-0}" == "1" ]]; then
-                        echo -e "${BLUE}  导出: $var_name=$var_value${NC}" >&2
+                        echo -e "${BLUE}  Export: $var_name=$var_value${NC}" >&2
                     fi
                 fi
             fi
@@ -173,24 +173,24 @@ function load_env_files() {
 }
 
 # ============================================
-# 工具函数
+# Utility functions
 # ============================================
 
-# 验证容器名是否符合 Docker 命名规范
+# Validate container name against Docker naming conventions
 function validate_container_name() {
     local name="$1"
-    # 只允许：字母、数字、下划线、点、连字符
-    # 不能以点或连字符开头
+    # Only allow: letters, numbers, underscores, dots, hyphens
+    # Cannot start with a dot or hyphen
     if [[ ! "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]]; then
-        echo -e "${RED}错误: 容器名 '$name' 不符合命名规范${NC}"
-        echo -e "${YELLOW}容器名只能包含: 字母、数字、下划线、点、连字符${NC}"
-        echo -e "${YELLOW}且必须以字母或数字开头${NC}"
+        echo -e "${RED}Error: Container name '$name' does not conform to naming conventions${NC}"
+        echo -e "${YELLOW}Container names can only contain: letters, numbers, underscores, dots, hyphens${NC}"
+        echo -e "${YELLOW}and must start with a letter or number${NC}"
         return 1
     fi
     return 0
 }
 
-# 验证 agent 是否支持
+# Validate if agent is supported
 function is_valid_agent() {
     local agent="$1"
     for supported in "${SUPPORTED_AGENTS[@]}"; do
@@ -201,7 +201,7 @@ function is_valid_agent() {
     return 1
 }
 
-# 查找可用端口
+# Find available port
 function find_available_port() {
     local start_port=8001
     local end_port=8010
@@ -213,81 +213,81 @@ function find_available_port() {
         fi
     done
 
-    echo -e "${RED}错误: 端口 $start_port-$end_port 全部被占用${NC}" >&2
+    echo -e "${RED}Error: All ports $start_port-$end_port are in use${NC}" >&2
     return 1
 }
 
-# Email 转 suffix（email-safe 格式）
-# 示例: agent@gravtice.com -> agent-at-gravtice-com
+# Convert email to suffix (email-safe format)
+# Example: agent@gravtice.com -> agent-at-gravtice-com
 function email_to_suffix() {
     local email="$1"
     echo "$email" | tr '[:upper:]' '[:lower:]' | sed 's/@/-at-/g' | sed 's/\./-/g'
 }
 
-# 解析并验证只读参考目录列表，并填充 REF_DIR_MOUNT_ARGS/REF_DIR_SOURCE_DIRS 数组
+# Parse and validate read-only reference directories list, and populate REF_DIR_MOUNT_ARGS/REF_DIR_SOURCE_DIRS arrays
 function parse_ref_dirs() {
     local ref_dirs_config="$1"
-    local work_dir="$2"       # 当前工作目录，用于避免冲突
+    local work_dir="$2"       # Current working directory, used to avoid conflicts
     REF_DIR_MOUNT_ARGS=()
     REF_DIR_SOURCE_DIRS=()
 
-    # 如果为空，不挂载任何参考目录
+    # If empty, do not mount any reference directories
     if [[ -z "$ref_dirs_config" ]]; then
         return 0
     fi
 
-    # 将分号替换为换行符，保存到临时文件避免子 shell 问题
+    # Replace semicolons with newlines, save to temp file to avoid subshell issues
     local temp_file=$(mktemp)
     echo "$ref_dirs_config" | tr ';' '\n' > "$temp_file"
 
-    # 逐行读取并处理
+    # Read and process line by line
     while IFS= read -r dir_item; do
-        dir_item=$(echo "$dir_item" | xargs)  # 去除空格
+        dir_item=$(echo "$dir_item" | xargs)  # Remove whitespace
         [[ -z "$dir_item" ]] && continue
 
-        # 转换为绝对路径
+        # Convert to absolute path
         local abs_dir
         if [[ "$dir_item" =~ ^/ ]]; then
-            # 已经是绝对路径
+            # Already an absolute path
             abs_dir="$dir_item"
         else
-            # 相对路径，转换为绝对路径
+            # Relative path, convert to absolute path
             abs_dir=$(cd "$dir_item" 2>/dev/null && pwd)
             if [[ $? -ne 0 ]]; then
-                echo -e "${YELLOW}警告: 目录不存在或无法访问 '$dir_item'，跳过${NC}" >&2
+                echo -e "${YELLOW}Warning: Directory does not exist or cannot be accessed '$dir_item', skipping${NC}" >&2
                 continue
             fi
         fi
 
-        # 验证目录存在
+        # Verify directory exists
         if [[ ! -d "$abs_dir" ]]; then
-            echo -e "${YELLOW}警告: 目录不存在 '$abs_dir'，跳过${NC}" >&2
+            echo -e "${YELLOW}Warning: Directory does not exist '$abs_dir', skipping${NC}" >&2
             continue
         fi
 
-        # 验证不与工作目录冲突
+        # Verify no conflict with working directory
         if [[ "$abs_dir" == "$work_dir" ]]; then
-            echo -e "${YELLOW}警告: 参考目录与工作目录相同 '$abs_dir'，跳过（工作目录已自动挂载）${NC}" >&2
+            echo -e "${YELLOW}Warning: Reference directory same as working directory '$abs_dir', skipping (working directory is automatically mounted)${NC}" >&2
             continue
         fi
 
-        # 验证不是工作目录的子目录或父目录
+        # Verify not a subdirectory or parent directory of working directory
         if [[ "$abs_dir" == "$work_dir"/* ]] || [[ "$work_dir" == "$abs_dir"/* ]]; then
-            echo -e "${YELLOW}警告: 参考目录与工作目录有包含关系 '$abs_dir'，跳过${NC}" >&2
+            echo -e "${YELLOW}Warning: Reference directory has containment relationship with working directory '$abs_dir', skipping${NC}" >&2
             continue
         fi
 
-        # 添加到结果（以只读模式挂载到相同路径）
+        # Add to results (mount in read-only mode to same path)
         REF_DIR_MOUNT_ARGS+=(-v "$abs_dir:$abs_dir:ro")
         REF_DIR_SOURCE_DIRS+=("$abs_dir")
     done < "$temp_file"
 
-    # 清理临时文件
+    # Clean up temp file
     rm -f "$temp_file"
 }
 
 # ============================================
-# 帮助文档
+# Help documentation
 # ============================================
 
 function print_usage() {
@@ -296,166 +296,166 @@ function print_usage() {
     cat <<EOF
 gbox - Gravtice AgentBox v${VERSION}
 
-快速开始:
+Quick Start:
     cd ~/myproject
-    gbox claude                                 # 运行 Claude Code（本地模式）
-    gbox happy claude                           # 运行 Claude Code（远程协作模式）
+    gbox claude                                 # Run Claude Code (local mode)
+    gbox happy claude                           # Run Claude Code (remote collaboration mode)
 
-常用命令:
-    gbox <agent> [-- <参数>]                    启动 AI Agent（本地模式）
-    gbox happy <agent> [-- <参数>]              启动 AI Agent（远程协作模式）
-    gbox list                                   列出运行中的容器
-    gbox stop <容器名>                          停止并删除容器
-    gbox stop-all                               停止所有容器
-    gbox logs <容器名>                          查看容器日志
-    gbox shell <容器名>                         登录到容器 shell
+Common Commands:
+    gbox <agent> [-- <args>]                    Start AI Agent (local mode)
+    gbox happy <agent> [-- <args>]              Start AI Agent (remote collaboration mode)
+    gbox list                                   List running containers
+    gbox stop <container-name>                  Stop and delete container
+    gbox stop-all                               Stop all containers
+    gbox logs <container-name>                  View container logs
+    gbox shell <container-name>                 Login to container shell
 
-高级功能:
-    gbox oauth <cmd>                            OAuth 账号管理
-    gbox keepalive <cmd>                        维持容器管理
-    gbox build                                  构建容器镜像
-    gbox pull [tag]                             拉取预构建镜像
-    gbox status                                 显示所有容器详细状态
-    gbox exec <容器名> <命令>                   在容器中执行命令
-    gbox clean                                  清理所有停止的容器
+Advanced Features:
+    gbox oauth <cmd>                            OAuth account management
+    gbox keepalive <cmd>                        Container maintenance management
+    gbox build                                  Build container image
+    gbox pull [tag]                             Pull pre-built image
+    gbox status                                 Show detailed status of all containers
+    gbox exec <container-name> <command>        Execute command in container
+    gbox clean                                  Clean up all stopped containers
 
-支持的 AI Agent:
+Supported AI Agents:
     claude          Claude Code
     codex           Codex
     gemini          Google Gemini
 
-使用示例:
-    gbox claude -- --model=sonnet               # 传递参数给 claude
-    gbox happy claude -- --resume <id>          # 恢复远程会话
-    gbox gemini                                  # 运行 Gemini CLI
-    gbox oauth claude help                      # OAuth 帮助
+Usage Examples:
+    gbox claude -- --model=sonnet               # Pass arguments to claude
+    gbox happy claude -- --resume <id>          # Resume remote session
+    gbox gemini                                  # Run Gemini CLI
+    gbox oauth claude help                      # OAuth help
 
-更多帮助:
-    gbox help --full                            # 显示完整帮助文档
-    gbox oauth help                             # OAuth 详细帮助
-    gbox keepalive help                         # 维持容器帮助
+More Help:
+    gbox help --full                            # Show complete help documentation
+    gbox oauth help                             # OAuth detailed help
+    gbox keepalive help                         # Container maintenance help
 EOF
 
-    # 显示详细帮助
+    # Show detailed help
     if [[ "$show_full" == "--full" ]]; then
         cat <<'FULLEOF'
 
 ═══════════════════════════════════════════════════════════════
-                        完整帮助文档
+                    Complete Help Documentation
 ═══════════════════════════════════════════════════════════════
 
-运行模式详解:
-    only-local      本地模式 - 直接在容器内运行 AI Agent
-    local-remote    远程协作模式 - 支持远程客户端协作（基于 happy-coder）
+Run Modes Explained:
+    only-local      Local mode - Run AI Agent directly in container
+    local-remote    Remote collaboration mode - Support remote client collaboration (based on happy-coder)
 
-容器管理详解:
-    # 退出 agent 后容器默认保留，可直接再次运行复用
-    # 如需自动清理：GBOX_AUTO_CLEANUP=1 gbox claude
+Container Management Explained:
+    # Container is preserved by default after agent exits, can be reused directly
+    # For automatic cleanup: GBOX_AUTO_CLEANUP=1 gbox claude
 
-    gbox list                                   # 查看运行中的容器
-    gbox status                                 # 查看所有容器状态
-    gbox stop gbox-claude-myproject            # 停止并删除容器
-    gbox stop-all                               # 停止所有容器
-    gbox shell gbox-claude-myproject           # 登录到容器 shell
-    gbox exec gbox-claude-myproject "ls -la"   # 在容器中执行命令
-    gbox logs gbox-claude-myproject            # 查看容器日志
+    gbox list                                   # View running containers
+    gbox status                                 # View status of all containers
+    gbox stop gbox-claude-myproject            # Stop and delete container
+    gbox stop-all                               # Stop all containers
+    gbox shell gbox-claude-myproject           # Login to container shell
+    gbox exec gbox-claude-myproject "ls -la"   # Execute command in container
+    gbox logs gbox-claude-myproject            # View container logs
 
-OAuth 账号管理:
-    gbox oauth claude switch --limit 2025120111                         # 账号达到限制时切换(指定时间)
-    gbox oauth claude switch --limit-str "resets Nov 9, 5pm"           # 账号达到限制时切换(自动解析)
-    gbox oauth claude switch                                            # 主动切换账号
-    gbox oauth claude help                                              # 显示 OAuth 帮助
+OAuth Account Management:
+    gbox oauth claude switch --limit 2025120111                         # Switch when account reaches limit (specify time)
+    gbox oauth claude switch --limit-str "resets Nov 9, 5pm"           # Switch when account reaches limit (auto-parse)
+    gbox oauth claude switch                                            # Manually switch account
+    gbox oauth claude help                                              # Show OAuth help
 
-    # 支持多账号管理,在账号达到使用限制时自动切换到可用账号
-    # 账号配置存储在 ~/.gbox/claude,所有容器共享
+    # Support multi-account management, auto-switch to available account when limit is reached
+    # Account config stored in ~/.gbox/claude, shared across all containers
 
-维持容器管理:
-    gbox keepalive list                         # 列出所有维持容器
-    gbox keepalive stop <account-suffix>        # 停止指定维持容器
-    gbox keepalive stop-all                     # 停止所有维持容器
-    gbox keepalive logs <account-suffix>        # 查看维持容器日志
-    gbox keepalive help                         # 显示维持容器帮助
+Container Maintenance Management:
+    gbox keepalive list                         # List all maintenance containers
+    gbox keepalive stop <account-suffix>        # Stop specified maintenance container
+    gbox keepalive stop-all                     # Stop all maintenance containers
+    gbox keepalive logs <account-suffix>        # View maintenance container logs
+    gbox keepalive help                         # Show maintenance help
 
-    # 维持容器用于保持非活跃账号的登录态
-    # 切换账号时自动启动,切换回来时自动停止
-    # 资源占用低(256MB内存,0.25核CPU)
+    # Maintenance containers keep inactive accounts logged in
+    # Auto-start when switching account, auto-stop when switching back
+    # Low resource usage (256MB memory, 0.25 CPU cores)
 
-镜像构建与分发:
-    gbox build                                  # 构建镜像（包含 Playwright）
-    gbox pull [tag]                             # 拉取预构建镜像
-    gbox push [tag]                             # 推送镜像到 Docker Hub
+Image Building and Distribution:
+    gbox build                                  # Build image (includes Playwright)
+    gbox pull [tag]                             # Pull pre-built image
+    gbox push [tag]                             # Push image to Docker Hub
 
-    # 镜像仓库: docker.io/gravtice/agentbox
-    # 推送需要先登录: docker login
+    # Image repository: docker.io/gravtice/agentbox
+    # Push requires login first: docker login
 
-容器资源配置:
-    # 方式1: 使用 .env 文件（推荐）
-    # 复制 .env.example 为 .env 或 .env.local 进行配置
-    # 优先级: 命令行参数 > .env.local > .env > 默认值
+Container Resource Configuration:
+    # Method 1: Using .env file (recommended)
+    # Copy .env.example to .env or .env.local for configuration
+    # Priority: command-line parameters > .env.local > .env > defaults
     cp .env.example .env
-    # 编辑 .env 文件设置常用配置
-    # 编辑 .env.local 文件设置本地特定配置（不提交到git）
+    # Edit .env file to set common configuration
+    # Edit .env.local file to set local-specific configuration (not committed to git)
 
-    # 方式2: 通过环境变量设置
-    GBOX_MEMORY=8g                              容器内存限制（默认: 4g）
-    GBOX_CPU=4                                  容器 CPU 核心数（默认: 2）
-    GBOX_PORTS="8000:8000;7000:7001"            端口映射配置（默认: 不映射任何端口）
-    GBOX_REF_DIRS="/path/to/ref1;/path/to/ref2" 只读参考目录（默认: 无）
-    GBOX_PROXY="http://127.0.0.1:7890"          Agent 网络代理（默认: 无）
-    ANTHROPIC_API_KEY=sk-xxx                    Anthropic API Key（默认: 无）
-    DEBUG=happy:*                               调试模式（默认: 无）
-    GBOX_KEEP=true                              退出后保留容器（默认: false）
-    GBOX_NAME=my-container                      自定义容器名（默认: 自动生成）
+    # Method 2: Set via environment variables
+    GBOX_MEMORY=8g                              Container memory limit (default: 4g)
+    GBOX_CPU=4                                  Container CPU cores (default: 2)
+    GBOX_PORTS="8000:8000;7000:7001"            Port mapping configuration (default: no ports mapped)
+    GBOX_REF_DIRS="/path/to/ref1;/path/to/ref2" Read-only reference directories (default: none)
+    GBOX_PROXY="http://127.0.0.1:7890"          Agent network proxy (default: none)
+    ANTHROPIC_API_KEY=sk-xxx                    Anthropic API Key (default: none)
+    DEBUG=happy:*                               Debug mode (default: none)
+    GBOX_KEEP=true                              Keep container after exit (default: false)
+    GBOX_NAME=my-container                      Custom container name (default: auto-generated)
 
-    # 端口映射格式说明:
-    # - 格式: "host_port:container_port" (分号分隔多个端口)
-    # - 示例:
-    #   GBOX_PORTS="8000:8000"              # 宿主机 8000 -> 容器 8000
-    #   GBOX_PORTS="8080:8000"              # 宿主机 8080 -> 容器 8000
-    #   GBOX_PORTS="8000:8000;7000:7001"    # 多端口: 8000->8000, 7000->7001
-    # - 所有端口映射到 127.0.0.1 (仅本地访问)
-    # - 默认不映射任何端口，需要时通过 GBOX_PORTS 显式配置
+    # Port mapping format:
+    # - Format: "host_port:container_port" (multiple ports separated by semicolon)
+    # - Examples:
+    #   GBOX_PORTS="8000:8000"              # Host 8000 -> Container 8000
+    #   GBOX_PORTS="8080:8000"              # Host 8080 -> Container 8000
+    #   GBOX_PORTS="8000:8000;7000:7001"    # Multiple ports: 8000->8000, 7000->7001
+    # - All ports mapped to 127.0.0.1 (local access only)
+    # - No ports mapped by default, explicitly configure via GBOX_PORTS when needed
 
-    # 只读参考目录格式说明:
-    # - 格式: "目录路径" (分号分隔多个目录)
-    # - 示例:
-    #   GBOX_REF_DIRS="/Users/me/project1"                        # 单个参考目录
-    #   GBOX_REF_DIRS="/Users/me/project1;/Users/me/project2"    # 多个参考目录
-    # - 所有目录以只读方式挂载到容器中的相同路径
-    # - 用于为 AI Agent 提供其他项目的代码参考
-    # - 自动验证目录存在性和路径冲突
+    # Read-only reference directories format:
+    # - Format: "directory path" (multiple directories separated by semicolon)
+    # - Examples:
+    #   GBOX_REF_DIRS="/Users/me/project1"                        # Single reference directory
+    #   GBOX_REF_DIRS="/Users/me/project1;/Users/me/project2"    # Multiple reference directories
+    # - All directories mounted read-only to same path in container
+    # - Provide code references from other projects to AI Agent
+    # - Auto-validate directory existence and path conflicts
 
-    # 通过命令行参数设置（优先级高于环境变量）
+    # Set via command-line parameters (higher priority than environment variables)
     gbox claude --memory 8g --cpu 4 -- --model sonnet
     gbox happy claude -m 16g -c 8 -- --resume <session-id>
     gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
     gbox claude --api-key sk-xxx --debug
 
-    # 可用参数:
-    --memory, -m <value>       内存限制（如 4g, 8g, 16g）
-    --cpu, -c <value>          CPU 核心数（如 2, 4, 8）
-    --ports <value>            端口映射（如 "8000:8000;7000:7001"）
-    --ref-dirs <value>         只读参考目录（如 "/path/to/ref1;/path/to/ref2"）
-    --proxy <value>            Agent 网络代理（如 "http://127.0.0.1:7890"）
-    --api-key <value>          Anthropic API Key（如 "sk-xxx"）
-    --debug                    启用调试模式（happy:*）
-    --keep                     退出后保留容器
-    --name <value>             自定义容器名
+    # Available parameters:
+    --memory, -m <value>       Memory limit (e.g., 4g, 8g, 16g)
+    --cpu, -c <value>          CPU cores (e.g., 2, 4, 8)
+    --ports <value>            Port mapping (e.g., "8000:8000;7000:7001")
+    --ref-dirs <value>         Read-only reference directories (e.g., "/path/to/ref1;/path/to/ref2")
+    --proxy <value>            Agent network proxy (e.g., "http://127.0.0.1:7890")
+    --api-key <value>          Anthropic API Key (e.g., "sk-xxx")
+    --debug                    Enable debug mode (happy:*)
+    --keep                     Keep container after exit
+    --name <value>             Custom container name
 
-其他环境变量:
-    GBOX_AUTO_CLEANUP=1       退出后自动清理容器（默认保留容器）
-    GBOX_DEBUG=1              启用调试模式
-    GBOX_READY_ATTEMPTS=30    容器就绪检查次数
-    GBOX_READY_DELAY=0.2      检查间隔（秒）
+Other Environment Variables:
+    GBOX_AUTO_CLEANUP=1       Auto-cleanup container after exit (default: keep container)
+    GBOX_DEBUG=1              Enable debug mode
+    GBOX_READY_ATTEMPTS=30    Number of container readiness checks
+    GBOX_READY_DELAY=0.2      Check interval (seconds)
 
-特性列表:
-    ✅ 两种运行模式：本地模式（only-local）和远程协作模式（local-remote）
-    ✅ 多个 AI Agent：支持 claude、codex、gemini 等
-    ✅ 自动管理：基于当前目录和运行模式自动管理容器
-    ✅ 参数透传：支持 -- 分隔符传递参数
-    ✅ 配置持久化：配置存储在 ~/.gbox/{claude,happy}
-    ✅ 容器隔离：每个项目+模式独立容器，互不干扰
-    ✅ 资源限制：自动限制内存和CPU，启用依赖缓存
+Features:
+    ✅ Two run modes: Local mode (only-local) and remote collaboration mode (local-remote)
+    ✅ Multiple AI Agents: Support claude, codex, gemini, etc.
+    ✅ Auto management: Auto manage containers based on current directory and run mode
+    ✅ Argument forwarding: Support -- separator to pass arguments
+    ✅ Config persistence: Config stored in ~/.gbox/{claude,happy}
+    ✅ Container isolation: Independent containers per project+mode, no interference
+    ✅ Resource limits: Auto limit memory and CPU, enable dependency caching
 FULLEOF
     fi
 }

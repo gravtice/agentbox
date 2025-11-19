@@ -1,24 +1,24 @@
 #!/bin/bash
-# lib/keepalive.sh - Keepalive 账号登录态维持模块
-# 负责账号扫描、状态管理、容器生命周期与命令处理，依赖 common/state/docker/oauth 模块提供的变量与工具
+# lib/keepalive.sh - Keepalive account session maintenance module
+# Responsible for account scanning, state management, container lifecycle and command handling, depends on common/state/docker/oauth modules for variables and utilities
 
 # ============================================
-# Keepalive 账号登录态维持
+# Keepalive Account Session Maintenance
 # ============================================
 
-# Keepalive 状态文件
+# Keepalive state file
 KEEPALIVE_STATE_FILE="$GBOX_CONFIG_DIR/keepalive-state.json"
-KEEPALIVE_INTERVAL="${KEEPALIVE_INTERVAL:-3600}"  # 默认 1 小时
+KEEPALIVE_INTERVAL="${KEEPALIVE_INTERVAL:-3600}"  # Default 1 hour
 DOCKER_IMAGE="${IMAGE_FULL}"
 
-# Email 转 suffix（email-safe 格式）
-# 示例: agent@gravtice.com -> agent-at-gravtice-com
+# Convert email to suffix (email-safe format)
+# Example: agent@gravtice.com -> agent-at-gravtice-com
 email_to_suffix() {
     local email="$1"
     echo "$email" | tr '[:upper:]' '[:lower:]' | sed 's/@/-at-/g' | sed 's/\./-/g'
 }
 
-# 获取当前账号的 suffix
+# Get the suffix of current account
 get_current_account_suffix() {
     local claude_json="$GBOX_CLAUDE_DIR/.claude.json"
     if [[ ! -f "$claude_json" ]]; then
@@ -26,36 +26,36 @@ get_current_account_suffix() {
         return 1
     fi
 
-    # 读取当前账号的 email
+    # Read the email of current account
     local email=$(jq -r '.oauthAccount.emailAddress // empty' "$claude_json" 2>/dev/null)
     if [[ -z "$email" ]]; then
         echo ""
         return 1
     fi
 
-    # 转换 email 为 suffix
+    # Convert email to suffix
     email_to_suffix "$email"
 }
 
-# 扫描所有已登录账号 (V5 版本)
-# V5 改动：使用 .claude-{suffix}.json 替代 .oauth-account-{suffix}.json
-# 输出格式：每行一个账号信息，格式为 "email-suffix|filepath-suffix"
-# 示例输出：
-# current|current                                    # 当前账号
-# agent-at-gravtice-com|agent-at-gravtice-com-2025120115  # 备份账号（带限制时间）
+# Scan all logged-in accounts (V5 version)
+# V5 changes: Use .claude-{suffix}.json instead of .oauth-account-{suffix}.json
+# Output format: One account info per line, format is "email-suffix|filepath-suffix"
+# Example output:
+# current|current                                    # Current account
+# agent-at-gravtice-com|agent-at-gravtice-com-2025120115  # Backup account (with limit time)
 scan_logged_accounts() {
     local accounts=()
 
-    # 1. 检查当前账号
+    # 1. Check current account
     if [[ -f "$GBOX_CLAUDE_DIR/.credentials.json" ]]; then
         local email=$(jq -r '.oauthAccount.emailAddress // empty' "$GBOX_CLAUDE_DIR/.claude.json" 2>/dev/null)
         if [[ -n "$email" ]]; then
-            # 使用 "current" 作为特殊标识
+            # Use "current" as special identifier
             accounts+=("current|current")
         fi
     fi
 
-    # 2. 扫描备份账号（基于 .credentials-{suffix}.json）
+    # 2. Scan backup accounts (based on .credentials-{suffix}.json)
     for cred_file in "$GBOX_CLAUDE_DIR"/.credentials-*.json; do
         [[ -f "$cred_file" ]] || continue
 
@@ -63,9 +63,9 @@ scan_logged_accounts() {
         local suffix="${basename#.credentials-}"
         suffix="${suffix%.json}"
 
-        # 检查对应的 .claude-{suffix}.json 是否存在 (V5 改动)
+        # Check if corresponding .claude-{suffix}.json exists (V5 changes)
         if [[ -f "$GBOX_CLAUDE_DIR/.claude-${suffix}.json" ]]; then
-            # 提取 email_suffix（去掉 limitTime）
+            # Extract email_suffix (remove limitTime)
             local email_suffix="$suffix"
             if [[ "$suffix" =~ ^(.+)-([0-9]{10})$ ]]; then
                 email_suffix="${BASH_REMATCH[1]}"
@@ -75,24 +75,24 @@ scan_logged_accounts() {
         fi
     done
 
-    # 输出所有账号（每行一个）
+    # Output all accounts (one per line)
     printf '%s\n' "${accounts[@]}"
 }
 
-# 辅助函数：从 scan 结果中提取唯一的 email_suffix 列表
+# Helper function: Extract unique email_suffix list from scan result
 get_unique_email_suffixes() {
     local scan_result="$1"
     echo "$scan_result" | cut -d'|' -f1 | sort -u
 }
 
-# 获取账号的 email 和文件 suffix (V5 版本)
-# V5 改动：使用 .claude-{suffix}.json 替代 .oauth-account-{suffix}.json
-# 参数：email_suffix (不含限制时间) 或 "current"
-# 返回：JSON 格式的账号信息
+# Get account email and file suffix (V5 version)
+# V5 changes: Use .claude-{suffix}.json instead of .oauth-account-{suffix}.json
+# Parameter: email_suffix (without limit time) or "current"
+# Returns: Account information in JSON format
 get_account_info() {
     local email_suffix="$1"
 
-    # 如果是当前账号（email_suffix == "current"）
+    # If it is current account (email_suffix == "current")
     if [[ "$email_suffix" == "current" ]]; then
         local claude_json="$GBOX_CLAUDE_DIR/.claude.json"
         if [[ -f "$claude_json" ]]; then
@@ -105,22 +105,22 @@ get_account_info() {
         fi
     fi
 
-    # 从备份文件读取，查找匹配的 .claude-{suffix}.json（可能带限制时间）
+    # Read from backup file, find matching .claude-{suffix}.json (may have limit time)
     for claude_file in "$GBOX_CLAUDE_DIR"/.claude-${email_suffix}*.json; do
         [[ -f "$claude_file" ]] || continue
 
-        # 提取文件名中的 suffix
+        # Extract suffix from filename
         local basename=$(basename "$claude_file")
         local file_suffix="${basename#.claude-}"
         file_suffix="${file_suffix%.json}"
 
-        # 读取账号信息（从 oauthAccount 字段）
+        # Read account info (from oauthAccount field)
         local info=$(jq -r '.oauthAccount | {
             email: .emailAddress,
             accountUuid: .accountUuid
         }' "$claude_file" 2>/dev/null)
 
-        # 添加 fileSuffix 字段
+        # Add fileSuffix field
         echo "$info" | jq --arg fs "$file_suffix" '. + {fileSuffix: $fs}' 2>/dev/null
         return 0
     done
@@ -128,19 +128,19 @@ get_account_info() {
     echo "{}"
 }
 
-# 获取账号的限制时间（从文件名提取）
-# 参数：file_suffix (可能包含限制时间)
-# 返回：限制时间字符串或空
+# Get account limit time (extract from filename)
+# Parameter: file_suffix (may contain limit time)
+# Returns: Limit time string or empty
 get_account_limit_time() {
     local file_suffix="$1"
 
-    # 从 file_suffix 提取限制时间
+    # Extract limit time from file_suffix
     if [[ "$file_suffix" =~ -([0-9]{10})$ ]]; then
         echo "${BASH_REMATCH[1]}"
     fi
 }
 
-# 初始化状态文件
+# Initialize state file
 init_keepalive_state() {
     if [[ ! -f "$KEEPALIVE_STATE_FILE" ]]; then
         mkdir -p "$(dirname "$KEEPALIVE_STATE_FILE")"
@@ -148,35 +148,35 @@ init_keepalive_state() {
     fi
 }
 
-# 读取状态文件
-# 输出格式：每行一个 suffix
+# Read state file
+# Output format: One suffix per line
 read_keepalive_state() {
     if [[ ! -f "$KEEPALIVE_STATE_FILE" ]]; then
-        # 文件不存在，返回空
+        # File does not exist, return empty
         return 0
     fi
 
-    # 提取所有账号的 key
+    # Extract all account keys
     jq -r '.accounts | keys[]' "$KEEPALIVE_STATE_FILE" 2>/dev/null || true
 }
 
-# 更新状态文件 (V5 版本)
-# 参数：scan 结果（每行格式：email_suffix|file_suffix）
-# V5 改动：正确处理 "current" 账号
+# Update state file (V5 version)
+# Parameter: scan result (line format: email_suffix|file_suffix)
+# V5 changes: Properly handle "current" account
 update_keepalive_state() {
     local scan_result="$1"
 
     local accounts_json="{}"
 
-    # 为每个账号构建 JSON 对象
+    # Build JSON object for each account
     while IFS='|' read -r email_suffix file_suffix; do
         [[ -z "$email_suffix" ]] && continue
 
-        # 获取账号信息
+        # Get account info
         local account_info=$(get_account_info "$email_suffix")
         local email=$(echo "$account_info" | jq -r '.email // ""' 2>/dev/null)
 
-        # 构建容器名称（V5：current 账号使用 gbox-keepalive-current）
+        # Build container name (V5: current account uses gbox-keepalive-current)
         local container_name
         if [[ "$file_suffix" == "current" ]]; then
             container_name="gbox-keepalive-current"
@@ -186,19 +186,19 @@ update_keepalive_state() {
 
         local now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-        # 获取限制时间（从 file_suffix 提取）
+        # Get limit time (extract from file_suffix)
         local limit_time=""
         if [[ "$file_suffix" != "current" ]]; then
             limit_time=$(get_account_limit_time "$file_suffix")
         fi
 
-        # 判断是否是当前账号
+        # Determine if it is current account
         local is_current=false
         if [[ "$email_suffix" == "current" ]]; then
             is_current=true
         fi
 
-        # 更新 JSON
+        # Update JSON
         accounts_json=$(echo "$accounts_json" | jq \
             --arg suffix "$email_suffix" \
             --arg email "$email" \
@@ -215,7 +215,7 @@ update_keepalive_state() {
             }' 2>/dev/null)
     done <<< "$scan_result"
 
-    # 写入状态文件
+    # Write to state file
     local now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     jq -n \
         --argjson accounts "$accounts_json" \
@@ -228,45 +228,45 @@ update_keepalive_state() {
         }' > "$KEEPALIVE_STATE_FILE" 2>/dev/null
 }
 
-# 对比账号列表 - 找出新增账号
+# Compare account lists - Find added accounts
 compare_accounts_added() {
     local current="$1"
     local previous="$2"
 
-    # 使用 comm 命令找出差异
+    # Use comm command to find differences
     comm -23 <(echo "$current" | sort) <(echo "$previous" | sort)
 }
 
-# 对比账号列表 - 找出登出账号
+# Compare account lists - Find logged out accounts
 compare_accounts_removed() {
     local current="$1"
     local previous="$2"
 
-    # comm -13: 只在第二个文件中出现的行（登出账号）
+    # comm -13: Lines only in the second file (logged out accounts)
     comm -13 <(echo "$current" | sort) <(echo "$previous" | sort)
 }
 
-# 对比账号列表 - 找出不变账号
+# Compare account lists - Find unchanged accounts
 compare_accounts_unchanged() {
     local current="$1"
     local previous="$2"
 
-    # comm -12: 同时在两个文件中出现的行（不变账号）
+    # comm -12: Lines in both files (unchanged accounts)
     comm -12 <(echo "$current" | sort) <(echo "$previous" | sort)
 }
 
-# 为账号启动 keepalive 容器 (V5 版本)
-# V5 核心改动：每个容器独立挂载配置文件到固定路径
+# Start keepalive container for account (V5 version)
+# V5 core changes: Each container independently mounts config files to fixed paths
 start_keepalive_for_account() {
     local email_suffix="$1"
-    local file_suffix="$2"  # 可能与 email_suffix 相同或带 limitTime
+    local file_suffix="$2"  # May be the same as email_suffix or with limitTime
     local quiet_mode="${3:-0}"
 
     local container_name
     local claude_file
     local cred_file
 
-    # 确定容器名称和文件路径
+    # Determine container name and file paths
     if [[ "$file_suffix" == "current" ]]; then
         container_name="gbox-keepalive-current"
         claude_file="$GBOX_CLAUDE_DIR/.claude.json"
@@ -277,47 +277,47 @@ start_keepalive_for_account() {
         cred_file="$GBOX_CLAUDE_DIR/.credentials-${file_suffix}.json"
     fi
 
-    # 检查文件是否存在且有效
-    # 注意：Docker bind mount 在源文件不存在时会创建空目录，需要严格检查
+    # Check if files exist and are valid
+    # Note: Docker bind mount creates empty directory when source file doesn't exist, need strict check
     if [[ ! -f "$cred_file" ]] || [[ -d "$cred_file" ]] || [[ ! -s "$cred_file" ]]; then
         if (( quiet_mode == 0 )); then
-            echo -e "${RED}错误: credentials 文件不存在或无效: $file_suffix${NC}"
-            [[ -d "$cred_file" ]] && echo -e "${YELLOW}  提示: 检测到目录而非文件，可能是之前挂载残留，请手动删除${NC}"
+            echo -e "${RED}Error: credentials file does not exist or is invalid: $file_suffix${NC}"
+            [[ -d "$cred_file" ]] && echo -e "${YELLOW}  Hint: Detected directory instead of file, may be mount leftover, please delete manually${NC}"
         fi
         return 1
     fi
 
     if [[ ! -f "$claude_file" ]] || [[ -d "$claude_file" ]] || [[ ! -s "$claude_file" ]]; then
         if (( quiet_mode == 0 )); then
-            echo -e "${RED}错误: .claude.json 文件不存在或无效: $file_suffix${NC}"
-            [[ -d "$claude_file" ]] && echo -e "${YELLOW}  提示: 检测到目录而非文件，可能是之前挂载残留，请手动删除${NC}"
+            echo -e "${RED}Error: .claude.json file does not exist or is invalid: $file_suffix${NC}"
+            [[ -d "$claude_file" ]] && echo -e "${YELLOW}  Hint: Detected directory instead of file, may be mount leftover, please delete manually${NC}"
         fi
         return 1
     fi
 
-    # 检查容器是否已运行
+    # Check if container is already running
     if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
         if (( quiet_mode == 0 )); then
-            echo -e "${GREEN}✓ 容器已在运行中: $container_name${NC}"
+            echo -e "${GREEN}✓ Container is already running: $container_name${NC}"
         fi
         return 0
     fi
 
-    # 检查容器是否存在但已停止
+    # Check if container exists but is stopped
     if docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
-        # 删除后重新创建（确保挂载是最新的）
+        # Delete and recreate (ensure mounts are up to date)
         if (( quiet_mode == 0 )); then
-            echo -e "${YELLOW}容器已存在但未运行，删除后重新创建...${NC}"
+            echo -e "${YELLOW}Container exists but not running, deleting and recreating...${NC}"
         fi
         docker rm -f "$container_name" >/dev/null 2>&1
     fi
 
-    # 创建并启动容器
+    # Create and start container
     if (( quiet_mode == 0 )); then
-        echo -e "${GREEN}创建 keepalive 容器: $container_name${NC}"
+        echo -e "${GREEN}Creating keepalive container: $container_name${NC}"
     fi
 
-    # 获取宿主机 HOME 路径（与主容器保持一致）
+    # Get host HOME path (consistent with main container)
     local host_home="$HOME"
     local container_claude_dir="${host_home}/.claude"
 
@@ -333,87 +333,87 @@ start_keepalive_for_account() {
         bash -c '
             KEEPALIVE_INTERVAL=${KEEPALIVE_INTERVAL:-3600}
 
-            echo "[$(date "+%Y-%m-%d %H:%M:%S")] Keepalive 容器启动"
+            echo "[$(date "+%Y-%m-%d %H:%M:%S")] Keepalive container started"
 
             while true; do
-                # V5: 检查两个配置文件是否存在
+                # V5: Check if both config files exist
                 if [[ ! -f "$HOME/.claude/.credentials.json" ]] || [[ ! -f "$HOME/.claude/.claude.json" ]]; then
-                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] 配置文件不存在，退出"
+                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] Config files do not exist, exiting"
                     if [[ ! -f "$HOME/.claude/.credentials.json" ]]; then
-                        echo "  - credentials.json: 缺失"
+                        echo "  - credentials.json: missing"
                     fi
                     if [[ ! -f "$HOME/.claude/.claude.json" ]]; then
-                        echo "  - .claude.json: 缺失"
+                        echo "  - .claude.json: missing"
                     fi
                     exit 0
                 fi
 
-                echo "[$(date "+%Y-%m-%d %H:%M:%S")] 执行 keepalive..."
+                echo "[$(date "+%Y-%m-%d %H:%M:%S")] Executing keepalive..."
 
-                # 执行 claude 命令并捕获输出
+                # Execute claude command and capture output
                 output=$(claude -p "who are you" 2>&1)
                 exit_code=$?
 
-                # V5: 基于输出内容的检测模块
+                # V5: Detection module based on output content
                 should_exit=0
                 exit_reason=""
 
                 if [[ $exit_code -eq 0 ]]; then
-                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] Token 有效"
-                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] 输出: $output"
+                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] Token is valid"
+                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] Output: $output"
                 else
-                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] 执行失败 (exit code: $exit_code)"
-                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] 输出: $output"
+                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] Execution failed (exit code: $exit_code)"
+                    echo "[$(date "+%Y-%m-%d %H:%M:%S")] Output: $output"
 
-                    # 检测模块：分析输出内容判断是否需要退出
+                    # Detection module: Analyze output content to determine if exit is needed
 
-                    # 1. HTTP 错误码检测
+                    # 1. HTTP error code detection
                     if echo "$output" | grep -qE "(403|401|404)"; then
                         should_exit=1
-                        exit_reason="HTTP 错误 - Token 无效或已被吊销"
+                        exit_reason="HTTP error - Token invalid or revoked"
 
-                    # 2. 认证失败检测
+                    # 2. Authentication failure detection
                     elif echo "$output" | grep -qi "Invalid API key"; then
                         should_exit=1
-                        exit_reason="API Key 无效 - Token 已过期或损坏"
+                        exit_reason="Invalid API key - Token expired or corrupted"
 
                     elif echo "$output" | grep -qi "Please run /login"; then
                         should_exit=1
-                        exit_reason="需要重新登录 - Token 失效"
+                        exit_reason="Need to re-login - Token invalidated"
 
                     elif echo "$output" | grep -qi "authentication failed"; then
                         should_exit=1
-                        exit_reason="认证失败"
+                        exit_reason="Authentication failed"
 
-                    # 3. 账号限制检测
+                    # 3. Account limit detection
                     elif echo "$output" | grep -qi "rate limit"; then
-                        should_exit=0  # 速率限制不退出，继续尝试
-                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] 检测到速率限制，继续等待..."
+                        should_exit=0  # Do not exit on rate limit, continue trying
+                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] Rate limit detected, continuing to wait..."
 
                     elif echo "$output" | grep -qi "weekly limit"; then
-                        should_exit=0  # 周限制不退出，继续尝试
-                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] 检测到周限制，继续等待..."
+                        should_exit=0  # Do not exit on weekly limit, continue trying
+                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] Weekly limit detected, continuing to wait..."
 
-                    # 4. 网络错误检测（可重试）
+                    # 4. Network error detection (retryable)
                     elif echo "$output" | grep -qiE "(connection refused|connection timeout|network error|failed to connect)"; then
-                        should_exit=0  # 网络问题不退出，继续尝试
-                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] 检测到网络问题，继续尝试..."
+                        should_exit=0  # Do not exit on network issues, continue trying
+                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] Network issue detected, continuing to try..."
 
-                    # 5. 配置错误检测
+                    # 5. Configuration error detection
                     elif echo "$output" | grep -qi "configuration error"; then
                         should_exit=1
-                        exit_reason="配置错误"
+                        exit_reason="Configuration error"
 
-                    # 6. 其他未知错误
+                    # 6. Other unknown errors
                     else
-                        should_exit=0  # 默认不退出，继续尝试
-                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] 未知错误，继续尝试..."
+                        should_exit=0  # Default do not exit, continue trying
+                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] Unknown error, continuing to try..."
                     fi
 
-                    # 根据检测结果决定是否退出
+                    # Decide whether to exit based on detection result
                     if [[ $should_exit -eq 1 ]]; then
-                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] ❌ 检测到致命错误: $exit_reason"
-                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] 容器退出"
+                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] ❌ Fatal error detected: $exit_reason"
+                        echo "[$(date "+%Y-%m-%d %H:%M:%S")] Container exiting"
                         exit 1
                     fi
                 fi
@@ -422,33 +422,33 @@ start_keepalive_for_account() {
             done
         ' >/dev/null 2>&1
 
-    # 验证容器是否成功启动
+    # Verify if container started successfully
     sleep 1
     if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
         if (( quiet_mode == 0 )); then
-            echo -e "${GREEN}✓ Keepalive 容器已启动${NC}"
+            echo -e "${GREEN}✓ Keepalive container started${NC}"
         fi
         return 0
     else
         if (( quiet_mode == 0 )); then
-            echo -e "${RED}✗ Keepalive 容器启动失败${NC}"
+            echo -e "${RED}✗ Keepalive container failed to start${NC}"
         fi
         return 1
     fi
 }
 
-# 为账号停止 keepalive 容器 (V5 版本)
+# Stop keepalive container for account (V5 version)
 stop_keepalive_for_account() {
     local suffix_input="$1"
     local quiet_mode="${2:-0}"
 
-    # 尝试从状态文件获取容器名称
+    # Try to get container name from state file
     local container_name=""
     if [[ -f "$KEEPALIVE_STATE_FILE" ]]; then
         container_name=$(jq -r ".accounts.\"$suffix_input\".containerName // empty" "$KEEPALIVE_STATE_FILE" 2>/dev/null)
     fi
 
-    # 如果状态文件中找不到，尝试根据 suffix_input 构建容器名
+    # If not found in state file, try to build container name based on suffix_input
     if [[ -z "$container_name" ]]; then
         if [[ "$suffix_input" == "current" ]]; then
             container_name="gbox-keepalive-current"
@@ -458,7 +458,7 @@ stop_keepalive_for_account() {
     fi
 
     if ! docker ps -q -f name="^${container_name}$" > /dev/null 2>&1; then
-        # 容器不在运行，检查是否存在已停止的容器
+        # Container not running, check if stopped container exists
         if docker ps -a -q -f name="^${container_name}$" > /dev/null 2>&1; then
             docker rm "$container_name" >/dev/null 2>&1
         fi
@@ -469,33 +469,33 @@ stop_keepalive_for_account() {
     docker rm "$container_name" >/dev/null 2>&1
 
     if (( quiet_mode == 0 )); then
-        echo -e "${GREEN}✓ Keepalive 已停止: $container_name${NC}"
+        echo -e "${GREEN}✓ Keepalive stopped: $container_name${NC}"
     fi
 
     return 0
 }
 
-# Keepalive Auto 主流程
+# Keepalive Auto main process
 keepalive_auto() {
     local quiet_mode="${1:-0}"
 
     if (( quiet_mode == 0 )); then
-        echo -e "${GREEN}=== Keepalive Auto 自动管理 ===${NC}"
+        echo -e "${GREEN}=== Keepalive Auto Management ===${NC}"
     fi
 
-    # 初始化状态文件
+    # Initialize state file
     init_keepalive_state
 
-    # 1. 扫描当前所有登录账号（格式：email_suffix|file_suffix）
+    # 1. Scan all currently logged-in accounts (format: email_suffix|file_suffix)
     local scan_result=$(scan_logged_accounts)
 
-    # 2. 提取 email_suffix 列表用于对比
+    # 2. Extract email_suffix list for comparison
     local current_accounts=$(get_unique_email_suffixes "$scan_result")
 
-    # 3. 读取上次记录的账号列表
+    # 3. Read previously recorded account list
     local previous_accounts=$(read_keepalive_state)
 
-    # 4. 对比差异
+    # 4. Compare differences
     local added_accounts=$(compare_accounts_added "$current_accounts" "$previous_accounts")
     local removed_accounts=$(compare_accounts_removed "$current_accounts" "$previous_accounts")
     local unchanged_accounts=$(compare_accounts_unchanged "$current_accounts" "$previous_accounts")
@@ -504,21 +504,21 @@ keepalive_auto() {
         local added_count=$(echo "$added_accounts" | grep -c '.' || echo "0")
         local removed_count=$(echo "$removed_accounts" | grep -c '.' || echo "0")
         local unchanged_count=$(echo "$unchanged_accounts" | grep -c '.' || echo "0")
-        echo "✓ 新增账号: $added_count"
-        echo "✓ 登出账号: $removed_count"
-        echo "✓ 不变账号: $unchanged_count"
+        echo "✓ Added accounts: $added_count"
+        echo "✓ Logged out accounts: $removed_count"
+        echo "✓ Unchanged accounts: $unchanged_count"
         echo ""
     fi
 
-    # 5. 处理新增账号 - 启动 keepalive (V5: 需要从 scan_result 获取 file_suffix)
+    # 5. Handle added accounts - Start keepalive (V5: need to get file_suffix from scan_result)
     local started_count=0
     while IFS='|' read -r email_suffix file_suffix; do
         [[ -z "$email_suffix" ]] && continue
 
-        # 检查是否在 added_accounts 中
+        # Check if in added_accounts
         if echo "$added_accounts" | grep -q "^${email_suffix}$"; then
             if (( quiet_mode == 0 )); then
-                echo "  → 新增账号，启动 keepalive: $file_suffix"
+                echo "  → Added account, starting keepalive: $file_suffix"
             fi
 
             if start_keepalive_for_account "$email_suffix" "$file_suffix" "1"; then
@@ -527,12 +527,12 @@ keepalive_auto() {
         fi
     done <<< "$scan_result"
 
-    # 6. 处理登出账号 - 停止 keepalive
+    # 6. Handle logged out accounts - Stop keepalive
     local stopped_count=0
     while IFS= read -r suffix; do
         [[ -z "$suffix" ]] && continue
         if (( quiet_mode == 0 )); then
-            echo "  → 登出账号，停止 keepalive: $suffix"
+            echo "  → Logged out account, stopping keepalive: $suffix"
         fi
 
         if stop_keepalive_for_account "$suffix" "1"; then
@@ -540,13 +540,13 @@ keepalive_auto() {
         fi
     done <<< "$removed_accounts"
 
-    # 7. 处理不变账号 - 确保 keepalive 容器运行 (V5: 需要从 scan_result 获取 file_suffix)
+    # 7. Handle unchanged accounts - Ensure keepalive containers are running (V5: need to get file_suffix from scan_result)
     local checked_count=0
     local restarted_count=0
     while IFS='|' read -r email_suffix file_suffix; do
         [[ -z "$email_suffix" ]] && continue
 
-        # 检查是否在 unchanged_accounts 中
+        # Check if in unchanged_accounts
         if echo "$unchanged_accounts" | grep -q "^${email_suffix}$"; then
             local container_name
             if [[ "$file_suffix" == "current" ]]; then
@@ -559,7 +559,7 @@ keepalive_auto() {
                 ((checked_count++))
             else
                 if (( quiet_mode == 0 )); then
-                    echo "  → 不变账号，容器异常，重新启动: $file_suffix"
+                    echo "  → Unchanged account, container abnormal, restarting: $file_suffix"
                 fi
 
                 if start_keepalive_for_account "$email_suffix" "$file_suffix" "1"; then
@@ -569,49 +569,49 @@ keepalive_auto() {
         fi
     done <<< "$scan_result"
 
-    # 8. 更新状态配置文件（传入完整的 scan 结果）
+    # 8. Update state config file (pass complete scan result)
     update_keepalive_state "$scan_result"
 
-    # 9. 输出结果
+    # 9. Output result
     if (( quiet_mode == 0 )); then
         echo ""
-        echo -e "${GREEN}完成:${NC}"
-        echo "  - 新启动: $started_count"
-        echo "  - 已停止: $stopped_count"
-        echo "  - 保持运行: $checked_count"
+        echo -e "${GREEN}Completed:${NC}"
+        echo "  - Newly started: $started_count"
+        echo "  - Stopped: $stopped_count"
+        echo "  - Kept running: $checked_count"
         if (( restarted_count > 0 )); then
-            echo "  - 重新启动: $restarted_count"
+            echo "  - Restarted: $restarted_count"
         fi
     fi
 }
 
-# Keepalive 状态显示
+# Keepalive status display
 keepalive_status() {
-    echo -e "${GREEN}=== Keepalive 状态 ===${NC}"
+    echo -e "${GREEN}=== Keepalive Status ===${NC}"
     echo ""
 
-    # 读取状态文件
+    # Read state file
     if [[ ! -f "$KEEPALIVE_STATE_FILE" ]]; then
-        echo -e "${YELLOW}状态文件不存在${NC}"
+        echo -e "${YELLOW}State file does not exist${NC}"
         echo ""
-        echo -e "${BLUE}提示: 运行 'gbox keepalive auto' 初始化${NC}"
+        echo -e "${BLUE}Hint: Run 'gbox keepalive auto' to initialize${NC}"
         return 0
     fi
 
-    # 显示状态文件信息
+    # Display state file information
     local last_scan=$(jq -r '.lastScan // ""' "$KEEPALIVE_STATE_FILE" 2>/dev/null)
-    echo -e "最后扫描: ${BLUE}$last_scan${NC}"
+    echo -e "Last scan: ${BLUE}$last_scan${NC}"
     echo ""
 
-    # 显示所有账号
+    # Display all accounts
     local accounts=$(jq -r '.accounts | keys[]' "$KEEPALIVE_STATE_FILE" 2>/dev/null)
 
     if [[ -z "$accounts" ]]; then
-        echo -e "${YELLOW}没有已登录账号${NC}"
+        echo -e "${YELLOW}No logged in accounts${NC}"
         return 0
     fi
 
-    echo -e "${GREEN}已登录账号:${NC}"
+    echo -e "${GREEN}Logged in accounts:${NC}"
 
     while IFS= read -r suffix; do
         [[ -z "$suffix" ]] && continue
@@ -621,110 +621,110 @@ keepalive_status() {
         local limit_time=$(jq -r ".accounts.\"$suffix\".limitTime // \"\"" "$KEEPALIVE_STATE_FILE" 2>/dev/null)
         local is_current=$(jq -r ".accounts.\"$suffix\".isCurrent // false" "$KEEPALIVE_STATE_FILE" 2>/dev/null)
 
-        # 检查容器状态
+        # Check container status
         local container_id=$(docker ps -q -f name="^${container_name}$" 2>/dev/null)
 
         if [[ -n "$container_id" ]]; then
-            # 容器运行中
+            # Container is running
             local uptime=$(docker ps --format "{{.Status}}" -f name="^${container_name}$" 2>/dev/null)
-            echo -e "  ✓ ${BLUE}$email${NC} (${GREEN}运行中${NC}, $uptime)"
+            echo -e "  ✓ ${BLUE}$email${NC} (${GREEN}Running${NC}, $uptime)"
             if [[ "$is_current" == "true" ]]; then
-                echo -e "    ${YELLOW}[当前账号]${NC}"
+                echo -e "    ${YELLOW}[Current account]${NC}"
             fi
             if [[ -n "$limit_time" && "$limit_time" != "null" ]]; then
-                echo -e "    限制时间: $limit_time"
+                echo -e "    Limit time: $limit_time"
             fi
         else
-            # 容器未运行
-            echo -e "  ✗ ${BLUE}$email${NC} (${RED}未运行${NC})"
+            # Container not running
+            echo -e "  ✗ ${BLUE}$email${NC} (${RED}Not running${NC})"
             if [[ "$is_current" == "true" ]]; then
-                echo -e "    ${YELLOW}[当前账号]${NC}"
+                echo -e "    ${YELLOW}[Current account]${NC}"
             fi
             if [[ -n "$limit_time" && "$limit_time" != "null" ]]; then
-                echo -e "    限制时间: $limit_time"
+                echo -e "    Limit time: $limit_time"
             fi
         fi
     done <<< "$accounts"
 }
 
-# 停止所有 keepalive 容器
+# Stop all keepalive containers
 keepalive_stop_all() {
-    echo -e "${GREEN}=== 停止所有 Keepalive 容器 ===${NC}"
+    echo -e "${GREEN}=== Stop All Keepalive Containers ===${NC}"
     echo ""
 
-    # 查找所有 keepalive 容器
+    # Find all keepalive containers
     local containers=$(docker ps -a --filter "name=^gbox-keepalive-" --format "{{.Names}}" 2>/dev/null)
 
     if [[ -z "$containers" ]]; then
-        echo -e "${YELLOW}没有找到 keepalive 容器${NC}"
+        echo -e "${YELLOW}No keepalive containers found${NC}"
         return 0
     fi
 
     local count=0
     while IFS= read -r container; do
         [[ -z "$container" ]] && continue
-        echo "  → 停止: $container"
+        echo "  → Stopping: $container"
         docker stop "$container" >/dev/null 2>&1
         docker rm "$container" >/dev/null 2>&1
         ((count++))
     done <<< "$containers"
 
     echo ""
-    echo -e "${GREEN}完成: 已停止 $count 个容器${NC}"
+    echo -e "${GREEN}Completed: Stopped $count containers${NC}"
 
-    # 清空状态文件
+    # Clear state file
     if [[ -f "$KEEPALIVE_STATE_FILE" ]]; then
         echo '{"accounts":{},"currentAccount":"","lastScan":""}' > "$KEEPALIVE_STATE_FILE"
-        echo -e "${BLUE}已重置状态文件${NC}"
+        echo -e "${BLUE}State file reset${NC}"
     fi
 }
 
-# 查看 keepalive 容器日志 (V5 版本)
+# View keepalive container logs (V5 version)
 keepalive_logs() {
     local suffix_input="$1"
 
     if [[ -z "$suffix_input" ]]; then
-        echo -e "${RED}错误: 请指定账号 suffix${NC}"
-        echo -e "${YELLOW}用法: gbox keepalive logs <suffix>${NC}"
-        echo -e "${YELLOW}示例:${NC}"
-        echo -e "${YELLOW}  - 当前账号: gbox keepalive logs current${NC}"
-        echo -e "${YELLOW}  - 备份账号: gbox keepalive logs agent-at-gravtice-com-2025120115${NC}"
+        echo -e "${RED}Error: Please specify account suffix${NC}"
+        echo -e "${YELLOW}Usage: gbox keepalive logs <suffix>${NC}"
+        echo -e "${YELLOW}Examples:${NC}"
+        echo -e "${YELLOW}  - Current account: gbox keepalive logs current${NC}"
+        echo -e "${YELLOW}  - Backup account: gbox keepalive logs agent-at-gravtice-com-2025120115${NC}"
         return 1
     fi
 
-    # 查询状态文件获取容器名称
+    # Query state file to get container name
     if [[ ! -f "$KEEPALIVE_STATE_FILE" ]]; then
-        echo -e "${RED}错误: 状态文件不存在${NC}"
-        echo -e "${YELLOW}提示: 运行 'gbox keepalive auto' 初始化${NC}"
+        echo -e "${RED}Error: State file does not exist${NC}"
+        echo -e "${YELLOW}Hint: Run 'gbox keepalive auto' to initialize${NC}"
         return 1
     fi
 
-    # 从状态文件中查找容器名称
+    # Find container name from state file
     local container_name=$(jq -r ".accounts.\"$suffix_input\".containerName // empty" "$KEEPALIVE_STATE_FILE" 2>/dev/null)
 
     if [[ -z "$container_name" ]]; then
-        echo -e "${RED}错误: 未找到账号: $suffix_input${NC}"
+        echo -e "${RED}Error: Account not found: $suffix_input${NC}"
         echo ""
-        echo -e "${YELLOW}提示: 使用 'gbox keepalive status' 查看所有账号${NC}"
+        echo -e "${YELLOW}Hint: Use 'gbox keepalive status' to view all accounts${NC}"
         return 1
     fi
 
-    # 检查容器是否存在
+    # Check if container exists
     if ! docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
-        echo -e "${RED}错误: 容器不存在: $container_name${NC}"
+        echo -e "${RED}Error: Container does not exist: $container_name${NC}"
         echo ""
-        echo -e "${YELLOW}提示: 使用 'gbox keepalive status' 查看所有账号${NC}"
+        echo -e "${YELLOW}Hint: Use 'gbox keepalive status' to view all accounts${NC}"
         return 1
     fi
 
-    echo -e "${GREEN}显示容器日志: ${container_name}${NC}"
-    echo -e "${YELLOW}按 Ctrl+C 退出${NC}"
+    echo -e "${GREEN}Displaying container logs: ${container_name}${NC}"
+    echo -e "${YELLOW}Press Ctrl+C to exit${NC}"
     echo ""
 
     docker logs -f "$container_name"
 }
 
-# Keepalive 容器管理命令处理
+# Keepalive container management command handler
 function handle_keepalive_command() {
     local subcommand="${1:-help}"
     shift || true
@@ -739,11 +739,11 @@ function handle_keepalive_command() {
         stop)
             local account="$1"
             if [[ -z "$account" ]]; then
-                echo -e "${RED}错误: 请指定账号 suffix${NC}"
-                echo -e "${YELLOW}用法: gbox keepalive stop <suffix>${NC}"
-                echo -e "${YELLOW}示例:${NC}"
-                echo -e "${YELLOW}  - 当前账号: gbox keepalive stop current${NC}"
-                echo -e "${YELLOW}  - 备份账号: gbox keepalive stop agent-at-gravtice-com-2025120115${NC}"
+                echo -e "${RED}Error: Please specify account suffix${NC}"
+                echo -e "${YELLOW}Usage: gbox keepalive stop <suffix>${NC}"
+                echo -e "${YELLOW}Examples:${NC}"
+                echo -e "${YELLOW}  - Current account: gbox keepalive stop current${NC}"
+                echo -e "${YELLOW}  - Backup account: gbox keepalive stop agent-at-gravtice-com-2025120115${NC}"
                 exit 1
             fi
             stop_keepalive_for_account "$account" "0"
@@ -756,66 +756,66 @@ function handle_keepalive_command() {
             ;;
         help|--help|-h)
             cat <<EOF
-${GREEN}gbox keepalive - OAuth 登录态维持管理${NC}
+${GREEN}gbox keepalive - OAuth Session Maintenance Management${NC}
 
-${YELLOW}用法:${NC}
-    gbox keepalive auto                      自动管理所有账号的 keepalive
-    gbox keepalive status                    查看 keepalive 状态
-    gbox keepalive stop <suffix>             停止指定账号的 keepalive
-                                             示例: stop current 或 stop agent-at-gravtice-com-2025120115
-    gbox keepalive stop-all                  停止所有 keepalive
-    gbox keepalive logs <suffix>             查看 keepalive 日志
-                                             示例: logs current 或 logs agent-at-gravtice-com-2025120115
-    gbox keepalive help                      显示此帮助信息
+${YELLOW}Usage:${NC}
+    gbox keepalive auto                      Automatically manage keepalive for all accounts
+    gbox keepalive status                    View keepalive status
+    gbox keepalive stop <suffix>             Stop keepalive for specified account
+                                             Examples: stop current or stop agent-at-gravtice-com-2025120115
+    gbox keepalive stop-all                  Stop all keepalive
+    gbox keepalive logs <suffix>             View keepalive logs
+                                             Examples: logs current or logs agent-at-gravtice-com-2025120115
+    gbox keepalive help                      Display this help information
 
-${YELLOW}什么是 Keepalive?${NC}
-    Keepalive 是自动化的 OAuth token 维持系统，通过后台容器定期执行
-    'claude -p "who"' 来保持账号登录态不过期。
+${YELLOW}What is Keepalive?${NC}
+    Keepalive is an automated OAuth token maintenance system that periodically executes
+    'claude -p "who"' in background containers to keep account sessions from expiring.
 
-${YELLOW}核心特性:${NC}
-    • 自动检测账号变化（登录/登出/切换）
-    • 为每个账号启动独立的 keepalive 容器
-    • 状态持久化，支持系统重启
-    • 智能处理账号限制时间
+${YELLOW}Core Features:${NC}
+    • Automatically detect account changes (login/logout/switch)
+    • Start independent keepalive container for each account
+    • State persistence, supports system restart
+    • Intelligently handle account limit times
 
-${YELLOW}容器命名规则:${NC}
+${YELLOW}Container Naming Convention:${NC}
     gbox-keepalive-<email-suffix>
 
-    示例:
+    Examples:
     • gbox-keepalive-agent-at-gravtice-com
     • gbox-keepalive-team-at-gravtice-com
 
-${YELLOW}示例:${NC}
-    gbox keepalive auto                      # 自动管理（推荐）
-    gbox keepalive status                    # 查看状态
-    gbox keepalive stop agent-at-gravtice-com  # 停止特定账号
-    gbox keepalive stop-all                  # 停止所有
-    gbox keepalive logs agent-at-gravtice-com  # 查看日志
+${YELLOW}Examples:${NC}
+    gbox keepalive auto                      # Auto manage (recommended)
+    gbox keepalive status                    # View status
+    gbox keepalive stop agent-at-gravtice-com  # Stop specific account
+    gbox keepalive stop-all                  # Stop all
+    gbox keepalive logs agent-at-gravtice-com  # View logs
 
-${YELLOW}自动触发时机:${NC}
-    • gbox claude 执行前后
-    • gbox oauth claude switch 执行后
-    • 系统重启后首次执行 gbox 命令
+${YELLOW}Auto Trigger Timing:${NC}
+    • Before and after gbox claude execution
+    • After gbox oauth claude switch execution
+    • First gbox command execution after system restart
 
-${YELLOW}注意事项:${NC}
-    • Keepalive 容器资源占用很低
-    • Token 失效（403）时容器会自动退出
-    • 账号 logout 时容器会自动停止
-    • 可以手动停止不需要的 keepalive
+${YELLOW}Notes:${NC}
+    • Keepalive containers have very low resource usage
+    • Container automatically exits when token is invalid (403)
+    • Container automatically stops when account logs out
+    • You can manually stop unwanted keepalive
 EOF
             ;;
         *)
-            echo -e "${RED}错误: 未知的子命令 '$subcommand'${NC}"
+            echo -e "${RED}Error: Unknown subcommand '$subcommand'${NC}"
             echo ""
-            echo -e "${YELLOW}可用子命令:${NC}"
-            echo -e "  auto        自动管理所有账号"
-            echo -e "  status      查看状态"
-            echo -e "  stop        停止指定账号"
-            echo -e "  stop-all    停止所有"
-            echo -e "  logs        查看日志"
-            echo -e "  help        显示帮助"
+            echo -e "${YELLOW}Available subcommands:${NC}"
+            echo -e "  auto        Automatically manage all accounts"
+            echo -e "  status      View status"
+            echo -e "  stop        Stop specified account"
+            echo -e "  stop-all    Stop all"
+            echo -e "  logs        View logs"
+            echo -e "  help        Display help"
             echo ""
-            echo -e "${YELLOW}使用 'gbox keepalive help' 查看详细说明${NC}"
+            echo -e "${YELLOW}Use 'gbox keepalive help' for detailed information${NC}"
             exit 1
             ;;
     esac

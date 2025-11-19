@@ -1,53 +1,53 @@
-# gbox Zsh 自动补全插件
-# 支持 gbox 命令的智能补全，包括子命令、agents 和参数
+# gbox Zsh auto-completion plugin
+# Support intelligent completion for gbox commands, including sub-commands, agents, and parameters
 
-# 主补全函数
+# Main completion function
 _gbox() {
     local curcontext="$curcontext" state line
     typeset -A opt_args
 
     local -a commands agents gbox_opts keepalive_cmds oauth_cmds
 
-    # 定义主命令
+    # Define main commands
     commands=(
-        'list:列出运行中的容器'
-        'status:显示所有容器详细状态'
-        'stop:停止并删除容器'
-        'stop-all:停止所有容器'
-        'clean:清理所有停止的容器'
-        'oauth:OAuth 账号管理'
-        'keepalive:维持容器管理'
-        'pull:拉取预构建镜像'
-        'push:推送镜像到 Docker Hub'
-        'logs:查看容器日志'
-        'exec:在容器中执行命令'
-        'shell:登录到容器 shell'
-        'build:构建容器镜像'
-        'help:显示帮助信息'
-        'happy:启动 AI Agent(远程协作模式)'
+        'list:List running containers'
+        'status:Show detailed status of all containers'
+        'stop:Stop and delete a container'
+        'stop-all:Stop all containers'
+        'clean:Clean up all stopped containers'
+        'oauth:OAuth account management'
+        'keepalive:Container keep-alive management'
+        'pull:Pull pre-built image'
+        'push:Push image to Docker Hub'
+        'logs:View container logs'
+        'exec:Execute command in container'
+        'shell:Login to container shell'
+        'build:Build container image'
+        'help:Show help information'
+        'happy:Start AI Agent (remote collaboration mode)'
     )
 
-    # 定义支持的 AI agents
+    # Define supported AI agents
     agents=(
         'claude:Claude Code'
         'codex:OpenAI Codex'
         'gemini:Google Gemini'
     )
 
-    # keepalive 子命令
+    # keepalive sub-commands
     keepalive_cmds=(
-        'list:列出所有维持容器'
-        'stop:停止指定维持容器'
-        'stop-all:停止所有维持容器'
-        'restart:重启维持容器'
-        'logs:查看维持容器日志'
-        'auto:自动管理维持容器'
-        'help:显示维持容器帮助'
+        'list:List all keep-alive containers'
+        'stop:Stop a specified keep-alive container'
+        'stop-all:Stop all keep-alive containers'
+        'restart:Restart keep-alive container'
+        'logs:View keep-alive container logs'
+        'auto:Automatically manage keep-alive containers'
+        'help:Show keep-alive container help'
     )
 
-    # oauth 子命令
+    # oauth sub-commands
     oauth_cmds=(
-        'help:显示 OAuth 帮助'
+        'help:Show OAuth help'
     )
 
     _arguments -C \
@@ -56,31 +56,31 @@ _gbox() {
 
     case $state in
         command)
-            # 第一个参数:可以是命令或 agent
+            # First parameter: can be a command or agent
             _describe -t commands 'gbox commands' commands
             _describe -t agents 'AI agents' agents
             ;;
         args)
             case $line[1] in
                 happy)
-                    # gbox happy <agent> 的补全
+                    # Completion for gbox happy <agent>
                     if (( CURRENT == 2 )); then
                         _describe -t agents 'AI agents' agents
                     else
-                        # happy 后面的 agent 参数
+                        # Agent parameter following happy
                         _gbox_agent_options
                     fi
                     ;;
                 claude|codex|gemini)
-                    # gbox <agent> 的补全
+                    # Completion for gbox <agent>
                     _gbox_agent_options
                     ;;
                 stop|logs|shell|exec)
-                    # 需要容器名的命令,补全运行中的容器
+                    # Commands that need container name, complete running containers
                     _gbox_containers
                     ;;
                 oauth)
-                    # oauth 子命令补全
+                    # oauth sub-command completion
                     if (( CURRENT == 2 )); then
                         _describe -t agents 'AI agents' agents
                     elif (( CURRENT == 3 )); then
@@ -88,22 +88,22 @@ _gbox() {
                     fi
                     ;;
                 keepalive)
-                    # keepalive 子命令补全
+                    # keepalive sub-command completion
                     if (( CURRENT == 2 )); then
                         _describe -t keepalive_cmds 'keepalive commands' keepalive_cmds
                     elif (( CURRENT == 3 )); then
                         case $line[2] in
                             stop|restart|logs)
-                                # 补全维持容器的账号后缀
+                                # Complete account suffix for keep-alive container
                                 _gbox_keepalive_accounts
                                 ;;
                         esac
                     fi
                     ;;
                 help)
-                    # help 参数补全
+                    # help parameter completion
                     if (( CURRENT == 2 )); then
-                        _arguments '--full[显示完整帮助文档]'
+                        _arguments '--full[Show full help documentation]'
                     fi
                     ;;
             esac
@@ -111,51 +111,51 @@ _gbox() {
     esac
 }
 
-# agent 参数选项补全
+# Agent parameter options completion
 _gbox_agent_options() {
     local gbox_opts
     gbox_opts=(
-        '--memory:内存限制(如 4g, 8g, 16g)'
-        '-m:内存限制(如 4g, 8g, 16g)'
-        '--cpu:CPU 核心数(如 2, 4, 8)'
-        '-c:CPU 核心数(如 2, 4, 8)'
-        '--ports:端口映射(如 "8000:8000;7000:7001")'
-        '--ref-dirs:只读参考目录(如 "/path/to/ref1;/path/to/ref2")'
-        '--proxy:Agent 网络代理(如 "http://127.0.0.1:7890")'
-        '--api-key:Anthropic API Key(如 "sk-xxx")'
-        '--debug:启用调试模式(happy:*)'
-        '--model:指定模型(如 sonnet, opus, haiku)'
-        '--keep:退出后保留容器'
-        '--name:自定义容器名'
+        '--memory:Memory limit (e.g., 4g, 8g, 16g)'
+        '-m:Memory limit (e.g., 4g, 8g, 16g)'
+        '--cpu:CPU cores (e.g., 2, 4, 8)'
+        '-c:CPU cores (e.g., 2, 4, 8)'
+        '--ports:Port mapping (e.g., "8000:8000;7000:7001")'
+        '--ref-dirs:Read-only reference directories (e.g., "/path/to/ref1;/path/to/ref2")'
+        '--proxy:Agent network proxy (e.g., "http://127.0.0.1:7890")'
+        '--api-key:Anthropic API Key (e.g., "sk-xxx")'
+        '--debug:Enable debug mode (happy:*)'
+        '--model:Specify model (e.g., sonnet, opus, haiku)'
+        '--keep:Keep container after exit'
+        '--name:Custom container name'
     )
 
     _describe -t gbox_opts 'gbox options' gbox_opts
 }
 
-# 补全运行中的容器名
+# Complete running container names
 _gbox_containers() {
     local -a containers
-    # 从 docker ps 获取容器名
+    # Get container names from docker ps
     containers=(${(f)"$(docker ps --filter 'name=gbox-' --format '{{.Names}}:{{.Status}}' 2>/dev/null)"})
     if (( ${#containers} > 0 )); then
         _describe -t containers 'running containers' containers
     fi
 }
 
-# 补全维持容器的账号后缀
+# Complete account suffix for keep-alive containers
 _gbox_keepalive_accounts() {
     local -a accounts
-    # 从 docker ps 获取维持容器的账号后缀
+    # Get account suffix for keep-alive containers from docker ps
     accounts=(${(f)"$(docker ps --filter 'name=gbox-keepalive-' --format '{{.Names}}' 2>/dev/null | sed 's/gbox-keepalive-//')"})
     if (( ${#accounts} > 0 )); then
         _describe -t accounts 'keepalive accounts' accounts
     fi
 }
 
-# 注册补全函数
+# Register completion function
 compdef _gbox gbox
 
-# 添加常用别名(可选)
+# Add common aliases (optional)
 alias gb='gbox'
 alias gbl='gbox list'
 alias gbs='gbox status'

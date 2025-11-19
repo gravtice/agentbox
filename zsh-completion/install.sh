@@ -1,56 +1,56 @@
 #!/bin/bash
-# gbox Zsh 补全自动安装脚本
+# gbox Zsh completion auto-installation script
 
 set -e
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 脚本所在目录
+# Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_FILE="$SCRIPT_DIR/gbox.plugin.zsh"
 TARGET_DIR="$HOME/.oh-my-zsh/custom/plugins/gbox"
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  gbox Zsh 补全自动安装                 ║${NC}"
+echo -e "${BLUE}║  gbox Zsh Completion Auto-Installation║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
-# 检查 oh-my-zsh
+# Check oh-my-zsh
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-    echo -e "${RED}✗ 错误: 未找到 oh-my-zsh${NC}"
-    echo -e "${YELLOW}请先安装 oh-my-zsh: https://ohmyz.sh/${NC}"
+    echo -e "${RED}✗ Error: oh-my-zsh not found${NC}"
+    echo -e "${YELLOW}Please install oh-my-zsh first: https://ohmyz.sh/${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓${NC} 检测到 oh-my-zsh"
+echo -e "${GREEN}✓${NC} oh-my-zsh detected"
 
-# 检查插件文件
+# Check plugin file
 if [[ ! -f "$PLUGIN_FILE" ]]; then
-    echo -e "${RED}✗ 错误: 插件文件不存在: $PLUGIN_FILE${NC}"
+    echo -e "${RED}✗ Error: Plugin file does not exist: $PLUGIN_FILE${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓${NC} 插件文件存在"
+echo -e "${GREEN}✓${NC} Plugin file exists"
 
-# 创建目标目录
+# Create target directory
 echo ""
-echo -e "${BLUE}[1/4]${NC} 安装插件文件..."
+echo -e "${BLUE}[1/4]${NC} Installing plugin file..."
 mkdir -p "$TARGET_DIR"
 cp "$PLUGIN_FILE" "$TARGET_DIR/"
-echo -e "${GREEN}✓${NC} 已复制到: $TARGET_DIR/gbox.plugin.zsh"
+echo -e "${GREEN}✓${NC} Copied to: $TARGET_DIR/gbox.plugin.zsh"
 
-# 更新 .zshrc
+# Update .zshrc
 echo ""
-echo -e "${BLUE}[2/4]${NC} 更新 .zshrc 配置..."
+echo -e "${BLUE}[2/4]${NC} Updating .zshrc configuration..."
 
 if grep -q "^plugins=(.*gbox" "$HOME/.zshrc"; then
-    echo -e "${YELLOW}→${NC} gbox 插件已在 .zshrc 中,跳过"
+    echo -e "${YELLOW}→${NC} gbox plugin already in .zshrc, skipping"
 elif grep -q "^plugins=(" "$HOME/.zshrc"; then
-    # 找到 plugins 行,并在其后添加 gbox
-    # 使用 sed 在 plugins=( 后的第一个元素前添加 gbox
+    # Find plugins line and add gbox after it
+    # Use sed to add gbox before the first element after plugins=(
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
         sed -i '' '/^plugins=($/a\
@@ -60,55 +60,55 @@ gbox
         # Linux
         sed -i '/^plugins=($/a gbox' "$HOME/.zshrc"
     fi
-    echo -e "${GREEN}✓${NC} 已添加 gbox 到 plugins 数组"
+    echo -e "${GREEN}✓${NC} Added gbox to plugins array"
 else
-    echo -e "${RED}✗ 错误: 无法在 .zshrc 中找到 plugins 数组${NC}"
-    echo -e "${YELLOW}请手动添加 'gbox' 到 .zshrc 的 plugins 数组${NC}"
+    echo -e "${RED}✗ Error: Cannot find plugins array in .zshrc${NC}"
+    echo -e "${YELLOW}Please manually add 'gbox' to the plugins array in .zshrc${NC}"
     exit 1
 fi
 
-# 清理补全缓存
+# Clean completion cache
 echo ""
-echo -e "${BLUE}[3/4]${NC} 清理补全缓存..."
+echo -e "${BLUE}[3/4]${NC} Cleaning completion cache..."
 rm -f "$HOME/.zcompdump"*
-echo -e "${GREEN}✓${NC} 缓存已清理"
+echo -e "${GREEN}✓${NC} Cache cleaned"
 
-# 验证安装
+# Verify installation
 echo ""
-echo -e "${BLUE}[4/4]${NC} 验证安装..."
+echo -e "${BLUE}[4/4]${NC} Verifying installation..."
 
-# 在新的 zsh 进程中测试
+# Test in a new zsh process
 if zsh -i -c 'type _gbox' &>/dev/null; then
-    echo -e "${GREEN}✓${NC} _gbox 函数可以加载"
+    echo -e "${GREEN}✓${NC} _gbox function can be loaded"
 else
-    echo -e "${YELLOW}⚠${NC} 函数加载测试失败 (这在某些环境下是正常的)"
+    echo -e "${YELLOW}⚠${NC} Function loading test failed (this is normal in some environments)"
 fi
 
 if zsh -i -c '[[ -n "${_comps[gbox]}" ]]' 2>/dev/null; then
-    echo -e "${GREEN}✓${NC} gbox 补全已注册"
+    echo -e "${GREEN}✓${NC} gbox completion registered"
 else
-    echo -e "${YELLOW}⚠${NC} 补全注册测试失败 (这在某些环境下是正常的)"
+    echo -e "${YELLOW}⚠${NC} Completion registration test failed (this is normal in some environments)"
 fi
 
-# 完成
+# Completion
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  安装完成!                            ║${NC}"
+echo -e "${GREEN}║  Installation Complete!                ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${YELLOW}下一步:${NC}"
+echo -e "${YELLOW}Next steps:${NC}"
 echo ""
-echo -e "  ${BLUE}1.${NC} 重新加载 shell (推荐):"
+echo -e "  ${BLUE}1.${NC} Reload shell (recommended):"
 echo -e "     ${GREEN}exec zsh${NC}"
 echo ""
-echo -e "  ${BLUE}2.${NC} 或者 source 配置:"
+echo -e "  ${BLUE}2.${NC} Or source configuration:"
 echo -e "     ${GREEN}source ~/.zshrc${NC}"
 echo ""
-echo -e "  ${BLUE}3.${NC} 或者打开新的终端窗口"
+echo -e "  ${BLUE}3.${NC} Or open a new terminal window"
 echo ""
-echo -e "${YELLOW}测试补全:${NC}"
-echo -e "  ${GREEN}gbox [按 Tab 键]${NC}"
+echo -e "${YELLOW}Test completion:${NC}"
+echo -e "  ${GREEN}gbox [Press Tab key]${NC}"
 echo ""
-echo -e "查看使用说明:"
+echo -e "View usage instructions:"
 echo -e "  ${GREEN}cat $SCRIPT_DIR/README.md${NC}"
 echo ""

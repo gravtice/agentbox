@@ -1,9 +1,9 @@
 #!/bin/bash
-# lib/container.sh - 容器生命周期管理
-# 依赖 common.sh/state.sh/docker.sh 提供的变量和函数
+# lib/container.sh - Container lifecycle management
+# Depends on variables and functions provided by common.sh/state.sh/docker.sh
 
 # ============================================
-# 容器环境准备
+# Container environment preparation
 # ============================================
 
 function prepare_container_environment() {
@@ -14,73 +14,73 @@ function prepare_container_environment() {
 
     local prepare_cmd
     prepare_cmd=$(cat <<EOF
-# 删除容器标识文件
+# Remove container identifier files
 rm -f /.dockerenv
 rm -f /run/.containerenv
 
-# Git 配置通过挂载 ~/.gbox/.gitconfig 提供
-# 验证配置是否正确挂载
+# Git configuration is provided through mounting ~/.gbox/.gitconfig
+# Verify that the configuration is correctly mounted
 if [[ -f \$HOME/.gitconfig ]]; then
-    echo '✅ Git配置已挂载'
+    echo '✅ Git config mounted'
 else
-    echo '⚠️  警告: Git配置文件未找到'
+    echo '⚠️  Warning: Git config file not found'
 fi
 
-# 创建用户（与宿主机UID/GID一致）
+# Create user (matching host UID/GID)
 groupadd -g ${group_id} guser 2>/dev/null || true
 useradd -u ${user_id} -g ${group_id} -d \$HOME -s /bin/bash guser 2>/dev/null || true
 
-# 确保整个 HOME 目录归 guser 所有（包括所有挂载点和子目录）
-# 这样任何程序都可以在 HOME 下创建配置文件和缓存目录
+# Ensure entire HOME directory is owned by guser (including all mount points and subdirectories)
+# This allows any program to create config files and cache directories under HOME
 chown -R ${user_id}:${group_id} \$HOME 2>/dev/null || true
 
-# 清理 Playwright 锁定目录（激进策略）
-# Playwright MCP 使用固定的目录名，容易产生锁定问题
-# 每次启动都清理，确保环境干净（用户数据不重要，可重新登录）
+# Clean Playwright lock directories (aggressive strategy)
+# Playwright MCP uses fixed directory names, prone to lock issues
+# Clean on every startup to ensure clean environment (user data not important, can re-login)
 find /usr/local/share/playwright -maxdepth 1 -name "mcp-chrome-*" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# 同时清理可能残留的 Chrome 进程（使用 kill 而不是 pkill，避免挂起）
+# Also clean up potentially stray Chrome processes (use kill instead of pkill to avoid hanging)
 ps aux | grep -E 'chrome.*--user-data-dir=/usr/local/share/playwright' | grep -v grep | awk '{print \$2}' | xargs -r kill -9 2>/dev/null || true
 
-# Claude Code 配置文件路径处理：
-# - Claude Code 期望配置在 \$HOME/.claude.json
-# - 为了所有容器共享配置，我们挂载 ~/.gbox/claude/ 到 \$HOME/.claude/
-# - 实际配置文件在 \$HOME/.claude/.claude.json
-# - 创建符号链接：\$HOME/.claude.json -> \$HOME/.claude/.claude.json
+# Claude Code config file path handling:
+# - Claude Code expects config at \$HOME/.claude.json
+# - To share config across all containers, we mount ~/.gbox/claude/ to \$HOME/.claude/
+# - Actual config file is at \$HOME/.claude/.claude.json
+# - Create symlink: \$HOME/.claude.json -> \$HOME/.claude/.claude.json
 
-# 确保 .claude/.claude.json 存在
+# Ensure .claude/.claude.json exists
 if [[ ! -f \$HOME/.claude/.claude.json ]]; then
     echo '{}' > \$HOME/.claude/.claude.json
     chown ${user_id}:${group_id} \$HOME/.claude/.claude.json
-    echo '📝 创建新的 Claude 配置文件'
+    echo '📝 Created new Claude config file'
 fi
 
-# 创建符号链接（如果不存在）
+# Create symlink (if not exists)
 if [[ ! -e \$HOME/.claude.json ]]; then
     ln -s \$HOME/.claude/.claude.json \$HOME/.claude.json
-    echo '✅ 创建配置文件符号链接: \$HOME/.claude.json -> \$HOME/.claude/.claude.json'
+    echo '✅ Created config file symlink: \$HOME/.claude.json -> \$HOME/.claude/.claude.json'
 fi
 
-# 验证 OAuth 配置
+# Verify OAuth config
 if grep -q '\"oauthAccount\"' \$HOME/.claude/.claude.json 2>/dev/null; then
-    echo '✅ 检测到 Claude OAuth 认证配置（所有容器共享）'
+    echo '✅ Detected Claude OAuth config (shared across all containers)'
 else
-    echo '📝 首次使用 Claude，需要登录 Claude Code'
-    echo '   启动后请完成 OAuth 登录，认证信息将保存在 ~/.gbox/claude/.claude.json'
+    echo '📝 First time using Claude, need to login to Claude Code'
+    echo '   After startup, complete OAuth login, auth info will be saved in ~/.gbox/claude/.claude.json'
 fi
 
-# Codex 配置文件路径处理：
-# - Codex 使用 \$HOME/.codex/config.toml
-# - 为了所有容器共享配置，我们挂载 ~/.gbox/codex/ 到 \$HOME/.codex/
+# Codex config file path handling:
+# - Codex uses \$HOME/.codex/config.toml
+# - To share config across all containers, we mount ~/.gbox/codex/ to \$HOME/.codex/
 
-# 确保 .codex 目录存在并属于 guser
+# Ensure .codex directory exists and belongs to guser
 if [[ ! -d \$HOME/.codex ]]; then
     mkdir -p \$HOME/.codex
     chown ${user_id}:${group_id} \$HOME/.codex
-    echo '📝 创建 Codex 配置目录'
+    echo '📝 Created Codex config directory'
 fi
 
-# 如果 config.toml 不存在，创建一个基础配置
+# If config.toml does not exist, create a basic config
 if [[ ! -f \$HOME/.codex/config.toml ]]; then
     cat > \$HOME/.codex/config.toml <<'CODEX_CONFIG'
 model = "gpt-5-codex"
@@ -97,57 +97,57 @@ args = ["-y", "@playwright/mcp@latest", "--isolated", "--no-sandbox"]
 PLAYWRIGHT_BROWSERS_PATH = "/usr/local/share/playwright"
 CODEX_CONFIG
     chown ${user_id}:${group_id} \$HOME/.codex/config.toml
-    echo '📝 创建默认 Codex 配置文件（包含 Playwright MCP 支持）'
+    echo '📝 Created default Codex config file (with Playwright MCP support)'
 fi
 
-# Happy 登录态共享处理：
-# - 每个容器有独立的 happy 配置目录（包含独立的 machineId 和 daemon state）
-# - 但所有容器共享登录凭证（access.key）以避免重复登录
-# - 通过符号链接实现：\$HOME/.happy/access.key -> \$HOME/.happy-shared/access.key
+# Happy login state sharing handling:
+# - Each container has its own happy config directory (with independent machineId and daemon state)
+# - But all containers share login credentials (access.key) to avoid re-login
+# - Implemented via symlink: \$HOME/.happy/access.key -> \$HOME/.happy-shared/access.key
 
-# 确保共享目录存在
+# Ensure shared directory exists
 if [[ ! -d \$HOME/.happy-shared ]]; then
     mkdir -p \$HOME/.happy-shared
     chown ${user_id}:${group_id} \$HOME/.happy-shared
-    echo '📝 创建 Happy 共享配置目录'
+    echo '📝 Created Happy shared config directory'
 fi
 
-# 处理 access.key 的共享
-# 场景1：当前容器有 access.key 但不是符号链接（旧数据或新登录）-> 移动到 shared/
+# Handle access.key sharing
+# Scenario 1: Current container has access.key but it's not a symlink (old data or new login) -> move to shared/
 if [[ -f \$HOME/.happy/access.key ]] && [[ ! -L \$HOME/.happy/access.key ]]; then
     mv \$HOME/.happy/access.key \$HOME/.happy-shared/access.key
     chown ${user_id}:${group_id} \$HOME/.happy-shared/access.key
-    echo '📦 迁移登录凭证到共享目录'
+    echo '📦 Migrated login credentials to shared directory'
 fi
 
-# 场景2：shared/ 有 access.key，但当前容器没有 -> 创建符号链接
+# Scenario 2: shared/ has access.key, but current container doesn't -> create symlink
 if [[ -f \$HOME/.happy-shared/access.key ]] && [[ ! -e \$HOME/.happy/access.key ]]; then
     ln -s \$HOME/.happy-shared/access.key \$HOME/.happy/access.key
-    echo '✅ 创建登录凭证符号链接（所有容器共享登录态）'
+    echo '✅ Created login credential symlink (login state shared across all containers)'
 fi
 
-# 验证登录态
+# Verify login state
 if [[ -f \$HOME/.happy-shared/access.key ]]; then
-    echo '✅ 检测到 Happy 登录凭证（所有容器共享）'
+    echo '✅ Detected Happy login credentials (shared across all containers)'
 else
-    echo '📝 首次使用 Happy，需要登录'
-    echo '   启动后请运行: happy auth login'
+    echo '📝 First time using Happy, need to login'
+    echo '   After startup run: happy auth login'
 fi
 
-# 验证 Happy 环境变量配置
-echo '✅ Happy 权限配置已设置（通过环境变量）'
-echo '   HAPPY_AUTO_BYPASS_PERMISSIONS=1 将在所有模式下自动跳过权限'
+# Verify Happy environment variable config
+echo '✅ Happy permission config set (via environment variable)'
+echo '   HAPPY_AUTO_BYPASS_PERMISSIONS=1 will auto-skip permissions in all modes'
 EOF
     )
 
     if (( quiet == 0 )); then
-        echo -e "${YELLOW}正在准备环境...${NC}"
+        echo -e "${YELLOW}Preparing environment...${NC}"
         docker exec "$container_name" bash -c "$prepare_cmd"
         echo ""
-        echo -e "${GREEN}✓ 环境准备完成！${NC}"
+        echo -e "${GREEN}✓ Environment preparation complete!${NC}"
         echo ""
-        echo -e "${BLUE}下一步：${NC}"
-        echo -e "  ${YELLOW}./gbox claude $container_name${NC}  # 启动 Claude Code"
+        echo -e "${BLUE}Next steps:${NC}"
+        echo -e "  ${YELLOW}./gbox claude $container_name${NC}  # Start Claude Code"
         echo ""
     else
         docker exec "$container_name" bash -c "$prepare_cmd" >/dev/null
@@ -155,133 +155,133 @@ EOF
 }
 
 # ============================================
-# 容器创建与启动
+# Container creation and startup
 # ============================================
 
 function start_container() {
     local container_name="$1"
     local work_dir="${2:-.}"
-    local run_mode="${3:-only-local}"  # only-local 或 local-remote
-    local agent="${4:-claude}"  # claude 或 codex
+    local run_mode="${3:-only-local}"  # only-local or local-remote
+    local agent="${4:-claude}"  # claude or codex
     local quiet_mode=0
 
-    # 确保镜像存在
+    # Ensure image exists
     ensure_image
 
-    # 验证容器名是否为空
+    # Verify that container name is not empty
     if [[ -z "$container_name" ]]; then
-        echo -e "${RED}错误: 请指定容器名${NC}"
-        echo -e "${YELLOW}用法: ./gbox new <容器名> [工作目录]${NC}"
-        echo -e "${YELLOW}示例: ./gbox new myproject${NC}"
+        echo -e "${RED}Error: Please specify container name${NC}"
+        echo -e "${YELLOW}Usage: ./gbox new <container-name> [work-directory]${NC}"
+        echo -e "${YELLOW}Example: ./gbox new myproject${NC}"
         exit 1
     fi
 
-    # 验证容器名格式
+    # Verify container name format
     if ! validate_container_name "$container_name"; then
         exit 1
     fi
 
-    # 转换为绝对路径
+    # Convert to absolute path
     work_dir=$(cd "$work_dir" && pwd)
 
-    # 检查目录是否存在
+    # Check if directory exists
     if [[ ! -d "$work_dir" ]]; then
-        echo -e "${RED}错误: 工作目录不存在: $work_dir${NC}"
+        echo -e "${RED}Error: Work directory does not exist: $work_dir${NC}"
         exit 1
     fi
 
-    # 检查是否是git仓库或worktree
-    # 注意: 普通仓库的 .git 是目录，worktree 的 .git 是文件
+    # Check if it's a git repository or worktree
+    # Note: Regular repos have .git as directory, worktrees have .git as file
     if [[ ! -e "$work_dir/.git" ]]; then
         if (( quiet_mode == 0 )); then
-            echo -e "${YELLOW}警告: $work_dir 不是git仓库或worktree${NC}"
+            echo -e "${YELLOW}Warning: $work_dir is not a git repository or worktree${NC}"
         fi
     fi
 
-    # 检查容器名是否已存在
+    # Check if container name already exists
     if docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
-        echo -e "${RED}错误: 容器名 $container_name 已存在${NC}"
-        echo -e "${YELLOW}提示: 使用 './gbox list' 查看所有容器${NC}"
-        echo -e "${YELLOW}或者: 使用不同的容器名${NC}"
+        echo -e "${RED}Error: Container name $container_name already exists${NC}"
+        echo -e "${YELLOW}Hint: Use './gbox list' to view all containers${NC}"
+        echo -e "${YELLOW}Or: Use a different container name${NC}"
         exit 1
     fi
 
-    # 解析端口映射配置
+    # Parse port mapping configuration
     local port_mappings=$(parse_port_mappings "$CONTAINER_PORTS" "$run_mode")
 
-    # 解析只读参考目录配置
+    # Parse read-only reference directories configuration
     parse_ref_dirs "$CONTAINER_REF_DIRS" "$work_dir"
     local -a ref_dir_mappings=("${REF_DIR_MOUNT_ARGS[@]}")
     local -a ref_dir_sources=("${REF_DIR_SOURCE_DIRS[@]}")
 
-    # 确保网络存在
+    # Ensure network exists
     ensure_network
 
-    # 获取主仓库目录（如果是 worktree，会返回主仓库目录）
+    # Get main repository directory (if worktree, returns main repo directory)
     local main_dir=$(get_main_repo_dir "$work_dir")
 
-    # 确保 worktrees 目录存在并获取路径（基于主仓库目录）
+    # Ensure worktrees directory exists and get path (based on main repo directory)
     local worktree_dir=$(ensure_worktree_dir "$main_dir" "$quiet_mode")
 
-    # 容器日志文件
+    # Container log file
     local log_file="$LOGS_DIR/${container_name}.log"
 
     if (( quiet_mode == 0 )); then
-        echo -e "${GREEN}启动新容器...${NC}"
-        echo -e "  运行模式: ${BLUE}$run_mode${NC}"
+        echo -e "${GREEN}Starting new container...${NC}"
+        echo -e "  Run mode: ${BLUE}$run_mode${NC}"
         echo -e "  AI Agent: ${BLUE}$agent${NC}"
-        echo -e "  主仓库目录: ${BLUE}$main_dir${NC}"
-        echo -e "  工作目录: ${BLUE}$work_dir${NC}"
-        echo -e "  Worktrees目录: ${BLUE}$worktree_dir${NC}"
-        echo -e "  容器名: ${BLUE}$container_name${NC}"
+        echo -e "  Main repo directory: ${BLUE}$main_dir${NC}"
+        echo -e "  Work directory: ${BLUE}$work_dir${NC}"
+        echo -e "  Worktrees directory: ${BLUE}$worktree_dir${NC}"
+        echo -e "  Container name: ${BLUE}$container_name${NC}"
         if [[ -n "$port_mappings" ]]; then
-            echo -e "  端口映射: ${BLUE}${port_mappings//-p /}${NC}"
+            echo -e "  Port mapping: ${BLUE}${port_mappings//-p /}${NC}"
         else
-            echo -e "  端口映射: ${BLUE}无 (仅容器内网络)${NC}"
+            echo -e "  Port mapping: ${BLUE}None (container network only)${NC}"
         fi
         if (( ${#ref_dir_sources[@]} > 0 )); then
-            # 统计参考目录数量
+            # Count reference directories
             local ref_count=${#ref_dir_sources[@]}
-            echo -e "  参考目录: ${BLUE}${ref_count} 个只读目录${NC}"
+            echo -e "  Reference directories: ${BLUE}${ref_count} read-only directories${NC}"
             for src_dir in "${ref_dir_sources[@]}"; do
-                echo -e "    - ${BLUE}${src_dir}${NC} (只读)"
+                echo -e "    - ${BLUE}${src_dir}${NC} (read-only)"
             done
         fi
-        echo -e "  用户权限: ${BLUE}$(id -u):$(id -g)${NC}"
-        echo -e "  免权限模式: ${BLUE}启用${NC}"
-        echo -e "  资源限制: ${BLUE}内存=${MEMORY_LIMIT}, CPU=${CPU_LIMIT}核${NC}"
-        echo -e "  文件描述符: ${BLUE}65536${NC}"
-        echo -e "  TCP Keepalive: ${BLUE}5分钟 (优化长连接稳定性)${NC}"
-        echo -e "  依赖缓存: ${BLUE}启用 (pip/npm/uv)${NC}"
-        echo -e "  容器日志: ${BLUE}$log_file${NC}"
-        echo -e "  网络模式: ${BLUE}$NETWORK_NAME${NC}"
-        echo -e "  Claude配置: ${BLUE}$GBOX_CLAUDE_DIR${NC}"
-        echo -e "  Codex配置: ${BLUE}$GBOX_CODEX_DIR${NC}"
-        echo -e "  Gemini配置: ${BLUE}$GBOX_GEMINI_DIR${NC}"
-        echo -e "  Happy配置: ${BLUE}$GBOX_HAPPY_DIR${NC}"
+        echo -e "  User permissions: ${BLUE}$(id -u):$(id -g)${NC}"
+        echo -e "  Permission-less mode: ${BLUE}Enabled${NC}"
+        echo -e "  Resource limits: ${BLUE}Memory=${MEMORY_LIMIT}, CPU=${CPU_LIMIT} cores${NC}"
+        echo -e "  File descriptors: ${BLUE}65536${NC}"
+        echo -e "  TCP Keepalive: ${BLUE}5 minutes (optimize long connection stability)${NC}"
+        echo -e "  Dependency cache: ${BLUE}Enabled (pip/npm/uv)${NC}"
+        echo -e "  Container logs: ${BLUE}$log_file${NC}"
+        echo -e "  Network mode: ${BLUE}$NETWORK_NAME${NC}"
+        echo -e "  Claude config: ${BLUE}$GBOX_CLAUDE_DIR${NC}"
+        echo -e "  Codex config: ${BLUE}$GBOX_CODEX_DIR${NC}"
+        echo -e "  Gemini config: ${BLUE}$GBOX_GEMINI_DIR${NC}"
+        echo -e "  Happy config: ${BLUE}$GBOX_HAPPY_DIR${NC}"
         echo ""
     fi
 
-    # 获取当前用户的UID和GID
+    # Get current user's UID and GID
     local user_id=$(id -u)
     local group_id=$(id -g)
 
-    # 设置容器 hostname：使用容器名，确保每个容器都有独立的标识
+    # Set container hostname: use container name to ensure each container has independent identity
     local container_hostname="$container_name"
 
-    # 启动容器到后台
-    # 新策略: gbox 独立配置体系
-    #   - 所有 Claude 配置存储在宿主机 ~/.gbox/claude 目录
-    #   - 所有 Codex 配置存储在宿主机 ~/.gbox/codex 目录
-    #   - 所有 Gemini 配置存储在宿主机 ~/.gbox/gemini 目录
-    #   - 所有 Happy 配置存储在宿主机 ~/.gbox/happy 目录
-    #   - 直接 bind mount 到容器的 ~/.claude、~/.codex、~/.gemini 和 ~/.happy 目录
-    #   - 所有容器共享同一份配置（OAuth、CLAUDE.md、config.toml 等）
-    #   - 宿主机可以直接编辑 ~/.gbox/{claude,codex,gemini,happy} 下的文件
-    #   - Linux 容器之间可以共享 OAuth 认证
-    #   - worktrees 目录用于 git worktree 并行开发
-    #   - 主目录和 worktrees 目录都挂载到容器中，确保 worktree 可以访问主仓库
-    #   - 支持挂载只读参考目录，用于提供代码参考
+    # Start container in background
+    # New strategy: gbox independent configuration system
+    #   - All Claude configs stored in host ~/.gbox/claude directory
+    #   - All Codex configs stored in host ~/.gbox/codex directory
+    #   - All Gemini configs stored in host ~/.gbox/gemini directory
+    #   - All Happy configs stored in host ~/.gbox/happy directory
+    #   - Direct bind mount to container's ~/.claude, ~/.codex, ~/.gemini and ~/.happy directories
+    #   - All containers share the same config (OAuth, CLAUDE.md, config.toml etc.)
+    #   - Host can directly edit files under ~/.gbox/{claude,codex,gemini,happy}
+    #   - Linux containers can share OAuth authentication
+    #   - worktrees directory for git worktree parallel development
+    #   - Both main directory and worktrees directory mounted to container, ensuring worktree can access main repo
+    #   - Support mounting read-only reference directories for providing code references
     docker run -d -it \
         --name "$container_name" \
         --hostname "$container_hostname" \
@@ -325,58 +325,58 @@ function start_container() {
         bash > /dev/null
 
     if (( quiet_mode == 0 )); then
-        echo -e "${GREEN}✓ 容器已启动到后台${NC}"
+        echo -e "${GREEN}✓ Container started in background${NC}"
         echo ""
     fi
 
     if ! wait_for_container_ready "$container_name"; then
-        echo -e "${RED}错误: 容器 $container_name 启动后未能在预期时间内准备就绪${NC}"
-        echo -e "${YELLOW}请检查容器日志: gbox logs $container_name${NC}"
+        echo -e "${RED}Error: Container $container_name did not become ready in expected time after startup${NC}"
+        echo -e "${YELLOW}Please check container logs: gbox logs $container_name${NC}"
         docker rm -f "$container_name" >/dev/null 2>&1 || true
         remove_container_mapping "$work_dir"
         exit 1
     fi
 
-    # 准备容器环境（非交互式）
+    # Prepare container environment (non-interactive)
     prepare_container_environment "$container_name" "$user_id" "$group_id" "$quiet_mode"
 }
 
 # ============================================
-# 容器查询与状态
+# Container query and status
 # ============================================
 
 function list_containers() {
-    echo -e "${GREEN}运行中的gbox容器:${NC}"
+    echo -e "${GREEN}Running gbox containers:${NC}"
     echo ""
 
     local containers=$(docker ps --filter "name=${CONTAINER_PREFIX}-" --format "{{.Names}}")
 
     if [[ -z "$containers" ]]; then
-        echo -e "${YELLOW}没有运行中的容器${NC}"
+        echo -e "${YELLOW}No running containers${NC}"
         return
     fi
 
-    printf "%-30s %-35s %-30s %-15s\n" "容器名" "工作目录" "镜像" "端口映射"
+    printf "%-30s %-35s %-30s %-15s\n" "Container" "Work Dir" "Image" "Port"
     echo "------------------------------------------------------------------------------------------------------------------------"
 
     while IFS= read -r container; do
         local workdir=$(get_workdir_by_container "$container")
         local port=$(docker port "$container" 8000 2>/dev/null | cut -d: -f2)
         local image=$(docker inspect --format='{{.Config.Image}}' "$container" 2>/dev/null)
-        printf "%-30s %-35s %-30s %-15s\n" "$container" "${workdir:-未知}" "${image:-未知}" "$port:8000"
+        printf "%-30s %-35s %-30s %-15s\n" "$container" "${workdir:-Unknown}" "${image:-Unknown}" "$port:8000"
     done <<< "$containers"
 }
 
 function show_status() {
-    echo -e "${GREEN}所有gbox容器状态:${NC}"
+    echo -e "${GREEN}All gbox container status:${NC}"
     echo ""
 
-    printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "容器名" "运行模式" "Agent" "工作目录" "状态" "端口映射"
+    printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "Container" "Run Mode" "Agent" "Work Dir" "Status" "Port"
     echo "-----------------------------------------------------------------------------------------------------------------------------------"
 
-    # 键格式为 "{workDir}:{run_mode}:{agent}"
+    # Key format: "{workDir}:{run_mode}:{agent}"
     jq -r 'to_entries[] | "\(.key)|\(.value)"' "$STATE_FILE" | while IFS='|' read -r state_key container; do
-        # 分离 workDir, run_mode, agent
+        # Separate workDir, run_mode, agent
         local workdir="${state_key%%:*}"
         local rest="${state_key#*:}"
         local run_mode="${rest%%:*}"
@@ -384,91 +384,91 @@ function show_status() {
 
         if is_container_running "$container"; then
             local port=$(docker port "$container" 8000 2>/dev/null | cut -d: -f2)
-            printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "$container" "$run_mode" "$agent" "$workdir" "运行中" "$port:8000"
+            printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "$container" "$run_mode" "$agent" "$workdir" "Running" "$port:8000"
         else
-            printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "$container" "$run_mode" "$agent" "$workdir" "已停止" "-"
+            printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "$container" "$run_mode" "$agent" "$workdir" "Stopped" "-"
         fi
     done
 }
 
 # ============================================
-# 容器停止与清理
+# Container stop and cleanup
 # ============================================
 
 function stop_container() {
     local container_name="$1"
     if [[ -z "$container_name" ]]; then
-        echo -e "${RED}错误: 请指定容器名${NC}"
-        echo -e "${YELLOW}提示: 使用 './gbox list' 查看运行中的容器${NC}"
+        echo -e "${RED}Error: Please specify container name${NC}"
+        echo -e "${YELLOW}Hint: Use './gbox list' to view running containers${NC}"
         exit 1
     fi
 
-    # 检查容器是否存在（运行中或已停止）
+    # Check if container exists (running or stopped)
     if ! docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
-        echo -e "${RED}错误: 容器 $container_name 不存在${NC}"
+        echo -e "${RED}Error: Container $container_name does not exist${NC}"
         exit 1
     fi
 
-    # 如果容器正在运行，先停止
+    # If container is running, stop it first
     if is_container_running "$container_name"; then
-        echo -e "${YELLOW}停止容器: $container_name${NC}"
+        echo -e "${YELLOW}Stopping container: $container_name${NC}"
         docker stop "$container_name" > /dev/null
     else
-        echo -e "${YELLOW}删除已停止的容器: $container_name${NC}"
+        echo -e "${YELLOW}Removing stopped container: $container_name${NC}"
     fi
 
-    # 删除容器
+    # Remove container
     docker rm "$container_name" > /dev/null
 
-    # 清理映射（使用容器名直接删除）
+    # Clean up mapping (delete directly using container name)
     remove_container_mapping_by_container "$container_name"
 
-    echo -e "${GREEN}✓ 容器已删除${NC}"
+    echo -e "${GREEN}✓ Container removed${NC}"
 }
 
 function stop_all_containers() {
-    echo -e "${YELLOW}停止并删除所有gbox容器...${NC}"
+    echo -e "${YELLOW}Stopping and removing all gbox containers...${NC}"
     local containers=$(docker ps --filter "name=${CONTAINER_PREFIX}-" -q)
 
     if [[ -z "$containers" ]]; then
-        echo -e "${YELLOW}没有运行中的容器${NC}"
+        echo -e "${YELLOW}No running containers${NC}"
         return
     fi
 
     echo "$containers" | xargs docker stop
     echo "$containers" | xargs docker rm
 
-    # 清理所有映射
+    # Clean up all mappings
     echo '{}' > "$STATE_FILE"
 
-    echo -e "${GREEN}完成: 已停止并删除所有容器${NC}"
+    echo -e "${GREEN}Done: All containers stopped and removed${NC}"
 }
 
 function clean_containers() {
-    echo -e "${YELLOW}清理停止的容器和映射...${NC}"
+    echo -e "${YELLOW}Cleaning stopped containers and mappings...${NC}"
 
-    # 清理Docker容器
+    # Clean up Docker containers
     local stopped=$(docker ps -a --filter "name=${CONTAINER_PREFIX}-" --filter "status=exited" -q)
     if [[ -n "$stopped" ]]; then
         echo "$stopped" | xargs docker rm
     fi
 
-    # 清理失效的映射（使用 jq 直接过滤）
-    # 注意：键格式为 "{workDir}:{agent}"
+    # Clean up invalid mappings (filter directly with jq)
+    # Note: Key format is "{workDir}:{agent}"
     local all_containers=$(docker ps -a --format '{{.Names}}')
     safe_jq_update 'to_entries | map(select($containers | contains(.value))) | from_entries' --arg containers "$all_containers"
 
-    echo -e "${GREEN}完成${NC}"
+    echo -e "${GREEN}Done${NC}"
 }
 
 # ============================================
-# 日志与命令执行
+# Logs and command execution
 # ============================================
 
 function show_logs() {
     local container_name="$1"
     if [[ -z "$container_name" ]]; then
-        echo -e "${RED}错误: 请指定容器名${NC}"
+        echo -e "${RED}Error: Please specify container name${NC}"
         exit 1
     fi
 
@@ -481,7 +481,7 @@ function exec_command() {
     local command="$@"
 
     if [[ -z "$container_name" ]]; then
-        echo -e "${RED}错误: 请指定容器名${NC}"
+        echo -e "${RED}Error: Please specify container name${NC}"
         exit 1
     fi
 
@@ -492,36 +492,36 @@ function shell_command() {
     local container_name="$1"
 
     if [[ -z "$container_name" ]]; then
-        echo -e "${RED}错误: 请指定容器名${NC}"
-        echo -e "${YELLOW}用法: gbox shell <容器名>${NC}"
-        echo -e "${YELLOW}提示: 使用 'gbox list' 查看运行中的容器${NC}"
+        echo -e "${RED}Error: Please specify container name${NC}"
+        echo -e "${YELLOW}Usage: gbox shell <container-name>${NC}"
+        echo -e "${YELLOW}Hint: Use 'gbox list' to view running containers${NC}"
         exit 1
     fi
 
-    # 检查容器是否存在
+    # Check if container exists
     if ! docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
-        echo -e "${RED}错误: 容器 '$container_name' 不存在${NC}"
-        echo -e "${YELLOW}提示: 使用 'gbox list' 查看运行中的容器${NC}"
+        echo -e "${RED}Error: Container '$container_name' does not exist${NC}"
+        echo -e "${YELLOW}Hint: Use 'gbox list' to view running containers${NC}"
         exit 1
     fi
 
-    # 检查容器是否运行
+    # Check if container is running
     local container_state=$(docker inspect -f '{{.State.Status}}' "$container_name" 2>/dev/null)
     if [[ "$container_state" != "running" ]]; then
-        echo -e "${YELLOW}容器 '$container_name' 未运行，正在启动...${NC}"
+        echo -e "${YELLOW}Container '$container_name' is not running, starting...${NC}"
         docker start "$container_name" >/dev/null 2>&1
         if ! wait_for_container_ready "$container_name"; then
-            echo -e "${RED}错误: 容器启动失败${NC}"
+            echo -e "${RED}Error: Container startup failed${NC}"
             exit 1
         fi
-        echo -e "${GREEN}✓ 容器已启动${NC}"
+        echo -e "${GREEN}✓ Container started${NC}"
     fi
 
-    echo -e "${GREEN}正在登录到容器 '$container_name'...${NC}"
-    echo -e "${BLUE}提示: 使用 'exit' 或 Ctrl+D 退出容器 shell${NC}"
+    echo -e "${GREEN}Logging into container '$container_name'...${NC}"
+    echo -e "${BLUE}Hint: Use 'exit' or Ctrl+D to exit container shell${NC}"
     echo ""
 
-    # 以 guser 身份登录到容器的 bash shell
+    # Log into container bash shell as guser
     docker exec "${DOCKER_EXEC_TTY_ARGS[@]}" --user guser "$container_name" bash
 }
 
