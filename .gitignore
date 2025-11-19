@@ -36,6 +36,7 @@ Temporary Items
 tmp/
 temp/
 .cache/
+.playwright-mcp/
 
 # Local development
 .env

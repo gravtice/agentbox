@@ -192,16 +192,50 @@ cat ~/.gbox/claude/.claude.json
 
 ### 3. MCP 服务器管理
 
-```bash
-# 添加 MCP 服务器
-./gbox claude -- mcp add -s user filesystem -- npx -y @modelcontextprotocol/server-filesystem /home/guser
+#### 常用 MCP 服务推荐
 
-# 列出 MCP 服务器
+AgentBox 支持所有标准的 MCP 服务器。以下是一些常用推荐：
+
+**Playwright (浏览器自动化)**
+```bash
+# 安装 Playwright MCP - 支持浏览器自动化和网页截图
+./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+```
+
+**Codex CLI (终端命令执行)**
+```bash
+# 安装 Codex CLI MCP - 支持安全的终端命令执行
+./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
+```
+
+**Filesystem (文件系统访问)**
+```bash
+# 安装 Filesystem MCP - 支持读写文件系统
+./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
+```
+
+**GitHub (GitHub API 访问)**
+```bash
+# 安装 GitHub MCP - 支持操作 GitHub 仓库、Issues、PR 等
+./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
+```
+
+**基本操作**
+```bash
+# 列出已安装的 MCP 服务器
 ./gbox claude -- mcp list
 
 # 删除 MCP 服务器
-./gbox claude -- mcp remove filesystem
+./gbox claude -- mcp remove <服务器名>
+
+# 查看 MCP 服务器状态
+cat ~/.gbox/claude/.claude.json
 ```
+
+> 💡 **提示**:
+> - 安装后需要退出并重新进入 Claude Code 会话才能生效
+> - Playwright 必须使用 `--isolated --no-sandbox` 参数避免浏览器冲突
+> - 更多 MCP 服务器请查看 [MCP 服务器目录](https://github.com/modelcontextprotocol/servers)
 
 ### 4. OAuth 账号切换
 

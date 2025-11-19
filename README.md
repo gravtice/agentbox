@@ -1,6 +1,6 @@
 # AgentBox
 
-> 容器化的 AI Agent 运行工具，支持 Claude Code、Codex、Gemini 等多种 AI Agent
+> 容器化的 AI Agent 运行工具，目前支持 Claude Code、Codex、Gemini CLI
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)](https://www.docker.com/)
@@ -157,7 +157,32 @@ cd ~/projects/team-project
 # OAuth 管理
 ./gbox oauth claude status  # 查看账号状态
 ./gbox oauth claude switch  # 切换账号
+
+# MCP 服务器管理
+./gbox claude -- mcp list   # 列出已安装的 MCP 服务器
+./gbox claude -- mcp add <name> -s user -- <command>  # 添加 MCP 服务器
+./gbox claude -- mcp remove <name>  # 删除 MCP 服务器
 ```
+
+## 🧩 常用 MCP 服务
+
+扩展 Claude Code 的能力，安装推荐的 MCP 服务器：
+
+```bash
+# Playwright - 浏览器自动化和网页截图
+./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+
+# Codex CLI - 安全的终端命令执行
+./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
+
+# Filesystem - 文件系统访问
+./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
+
+# GitHub - GitHub 仓库操作
+./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
+```
+
+> 💡 安装后需要退出并重新进入会话生效。更多 MCP 服务器请查看 [快速入门](./QUICKSTART.md#3-mcp-服务器管理)
 
 ## ⚙️ 配置示例
 
