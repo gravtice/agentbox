@@ -120,6 +120,11 @@ _gbox_agent_options() {
         '--cpu:CPU 核心数(如 2, 4, 8)'
         '-c:CPU 核心数(如 2, 4, 8)'
         '--ports:端口映射(如 "8000:8000;7000:7001")'
+        '--ref-dirs:只读参考目录(如 "/path/to/ref1;/path/to/ref2")'
+        '--proxy:Agent 网络代理(如 "http://127.0.0.1:7890")'
+        '--api-key:Anthropic API Key(如 "sk-xxx")'
+        '--debug:启用调试模式(happy:*)'
+        '--model:指定模型(如 sonnet, opus, haiku)'
         '--keep:退出后保留容器'
         '--name:自定义容器名'
     )
