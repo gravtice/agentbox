@@ -357,6 +357,52 @@ Examples:
 
 See `generate_container_name()` in `lib/container.sh:543`
 
+## Language Standards
+
+**All project content MUST be in English**, including:
+
+### Documentation
+- **ALL** documentation files (README.md, QUICKSTART.md, ARCHITECTURE.md, etc.)
+- Chinese versions are maintained separately with `_ZH` suffix (e.g., README_ZH.md)
+- English is the primary language; Chinese translations are secondary
+
+### Code Comments
+- **ALL** code comments must be in English
+- Function documentation must be in English
+- Inline comments must be in English
+- No Chinese characters in code comments
+
+### Commit Messages
+- **ALL** commit messages (subject and body) must be in English
+- Follow [Conventional Commits](https://www.conventionalcommits.org/) format
+- Use clear, concise English to describe changes
+- Examples:
+  - ✅ `feat: add OAuth multi-account support`
+  - ✅ `fix: resolve git worktree detection issue`
+  - ❌ `feat: 添加 OAuth 多账号支持`
+  - ❌ `fix: 修复 git worktree 检测问题`
+
+### Variable and Function Names
+- Use descriptive English names
+- Follow snake_case for variables: `container_name`, `main_repo_dir`
+- Follow UPPER_CASE for constants: `MEMORY_LIMIT`, `CPU_LIMIT`
+- Function names should be clear verbs: `start_container()`, `check_token_expiry()`
+
+### Error Messages and Logging
+- All user-facing messages must be in English
+- Error messages should be clear and actionable
+- Use the standardized message functions from `lib/common.sh`:
+  - `error "message"` - for errors
+  - `success "message"` - for success
+  - `info "message"` - for information
+  - `warn "message"` - for warnings
+
+**Rationale**: English is the universal language for software development, ensuring:
+- Better collaboration with international contributors
+- Compatibility with global tools and services
+- Easier code review and maintenance
+- Professional standard alignment
+
 ## Code Style Guidelines
 
 ### Shell Script Conventions
@@ -471,6 +517,8 @@ Test the full workflow:
 6. Clean up: `./gbox stop <container>`
 
 ## Commit Message Format
+
+**IMPORTANT**: All commit messages MUST be in English.
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):
 
