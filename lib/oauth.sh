@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # lib/oauth.sh - OAuth account management module
 # Responsible for email parsing, account finding, limit parsing, account switching, and command routing (depends on directory and color constants provided by lib/common.sh)
 

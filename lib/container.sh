@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # lib/container.sh - Container lifecycle management
 # Depends on variables and functions provided by common.sh/state.sh/docker.sh
 

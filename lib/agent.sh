@@ -1,3 +1,6 @@
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # lib/agent.sh
 # Agent session management related functions (extracted from gbox.backup, do not modify logic)
 

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # lib/keepalive.sh - Keepalive account session maintenance module
 # Responsible for account scanning, state management, container lifecycle and command handling, depends on common/state/docker/oauth modules for variables and utilities
 

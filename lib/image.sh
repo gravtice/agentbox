@@ -1,3 +1,6 @@
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # Image Management Module
 # Provides image existence checks, building, pulling, and pushing functions for reuse by other scripts.
 

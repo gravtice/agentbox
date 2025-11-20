@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # lib/state.sh - State management
 # This module is responsible for config directory initialization, state file management, and container mappings
 

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+#
 # lib/common.sh - Common utilities and constants
 # This module contains global constants, color definitions, environment checks and utility functions
 

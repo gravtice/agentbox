@@ -1,3 +1,6 @@
+# Copyright 2024-2025 Gravtice
+# SPDX-License-Identifier: Apache-2.0
+
 # ============================================
 # Stage 1: Build happy-cli
 # ============================================
