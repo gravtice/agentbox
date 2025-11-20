@@ -397,6 +397,12 @@ See `generate_container_name()` in `lib/container.sh:543`
   - `info "message"` - for information
   - `warn "message"` - for warnings
 
+### Communication with Users
+- **ALL** conversations with users MUST be in Chinese (中文)
+- This applies to explanations, discussions, and interactive responses
+- Code examples and technical terms should use English
+- When explaining concepts, use Chinese for clarity and understanding
+
 **Rationale**: English is the universal language for software development, ensuring:
 - Better collaboration with international contributors
 - Compatibility with global tools and services
