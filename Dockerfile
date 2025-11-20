@@ -150,6 +150,35 @@ RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# Install git-protector (prevents accidental deletion of .git directories)
+COPY scripts/git-protector.sh /usr/local/bin/git-protector.sh
+COPY scripts/system-rm-wrapper.sh /usr/local/bin/system-rm-wrapper.sh
+COPY scripts/system-mv-wrapper.sh /usr/local/bin/system-mv-wrapper.sh
+COPY scripts/system-rmdir-wrapper.sh /usr/local/bin/system-rmdir-wrapper.sh
+RUN chmod 755 /usr/local/bin/git-protector.sh \
+    /usr/local/bin/system-rm-wrapper.sh \
+    /usr/local/bin/system-mv-wrapper.sh \
+    /usr/local/bin/system-rmdir-wrapper.sh
+
+# Replace system commands with protected wrappers
+# This prevents AI agents from bypassing protection using absolute paths like /bin/rm
+RUN mkdir -p /usr/local/lib/original && \
+    # Copy original commands to backup location (use cp to avoid breaking subsequent commands)
+    cp /bin/rm /usr/local/lib/original/rm && \
+    cp /bin/mv /usr/local/lib/original/mv && \
+    cp /bin/rmdir /usr/local/lib/original/rmdir && \
+    # Remove and replace with wrapper symlinks
+    rm -f /bin/rm && ln -s /usr/local/bin/system-rm-wrapper.sh /bin/rm && \
+    rm -f /bin/mv && ln -s /usr/local/bin/system-mv-wrapper.sh /bin/mv && \
+    rm -f /bin/rmdir && ln -s /usr/local/bin/system-rmdir-wrapper.sh /bin/rmdir && \
+    # Also handle /usr/bin paths if they exist
+    if [ -f /usr/bin/rm ]; then cp /usr/bin/rm /usr/local/lib/original/rm-usr && /usr/local/lib/original/rm -f /usr/bin/rm && ln -sf /usr/local/bin/system-rm-wrapper.sh /usr/bin/rm; fi && \
+    if [ -f /usr/bin/mv ]; then cp /usr/bin/mv /usr/local/lib/original/mv-usr && /usr/local/lib/original/rm -f /usr/bin/mv && ln -sf /usr/local/bin/system-mv-wrapper.sh /usr/bin/mv; fi && \
+    if [ -f /usr/bin/rmdir ]; then cp /usr/bin/rmdir /usr/local/lib/original/rmdir-usr && /usr/local/lib/original/rm -f /usr/bin/rmdir && ln -sf /usr/local/bin/system-rmdir-wrapper.sh /usr/bin/rmdir; fi
+
+# Set BASH_ENV to load git-protector in non-interactive shells (for docker exec, scripts, etc.)
+ENV BASH_ENV=/usr/local/bin/git-protector.sh
+
 WORKDIR /workspace
 
 # Start bash by default (no longer start claude directly)

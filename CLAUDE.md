@@ -357,6 +357,78 @@ Examples:
 
 See `generate_container_name()` in `lib/container.sh:543`
 
+### Git Directory Protection
+
+AgentBox includes **dual-layer protection** against accidental deletion of `.git` directories by AI agents:
+
+#### Protection Layers
+
+**Layer 1: Command Wrapping**
+- Wraps `rm`, `mv`, and `rmdir` functions with safety checks
+- Automatically loaded in all shells (interactive and non-interactive via `BASH_ENV`)
+- Logs all blocked operations to `/var/log/gbox-git-protector.log`
+
+**Layer 2: System Command Replacement**
+- Replaces `/bin/rm`, `/bin/mv`, `/bin/rmdir` with protected wrappers
+- Original commands backed up to `/usr/local/lib/original/`
+- Prevents bypass attempts using absolute paths like `/bin/rm`
+
+#### What's Protected
+
+All attempts are **BLOCKED**, including bypass attempts:
+- Direct deletion: `rm -rf .git` ❌
+- Subdirectory: `rm -rf .git/objects` ❌
+- Moving: `mv .git .git.bak` ❌
+- Relative paths: `rm -rf ./project/.git` ❌
+- Absolute paths: `rm -rf /workspace/.git` ❌
+- **Bypass attempts**: `/bin/rm -rf .git` ❌ **Still blocked!**
+
+#### What's Allowed
+
+Normal operations work as expected:
+- File operations: `rm file.txt` ✅
+- `.git` prefix files: `rm .git-backup` ✅
+- Parent directories: `rm -rf parent/` ✅ (but not recommended)
+
+#### Error Messages
+
+When protection blocks an operation:
+```
+❌ ERROR: Attempting to remove .git directory is BLOCKED
+
+Protected paths detected:
+  - .git
+
+⚠️  This protection prevents accidental deletion of git repositories.
+⚠️  This operation cannot be bypassed for safety reasons.
+
+If you need to manage .git directories, exit the container and
+perform the operation on the host system.
+```
+
+**Note**: Error message intentionally does not reveal bypass methods.
+
+#### Implementation Details
+
+**Scripts**:
+- `scripts/git-protector.sh` - Command wrapping functions
+- `scripts/system-*-wrapper.sh` - System command replacements
+
+**Integration Points**:
+- `Dockerfile:163-181` - System command replacement during build
+- `lib/container.sh:144-158` - Protection setup in container environment
+
+**Logs and Auditing**:
+```bash
+# View protection events inside container
+./gbox shell <container-name>
+cat /var/log/gbox-git-protector.log
+
+# Verify command replacements
+ls -la /bin/rm /bin/mv /bin/rmdir
+which rm mv rmdir
+```
+
 ## Language Standards
 
 **All project content MUST be in English**, including:

@@ -140,6 +140,22 @@ fi
 # Verify Happy environment variable config
 echo '✅ Happy permission config set (via environment variable)'
 echo '   HAPPY_AUTO_BYPASS_PERMISSIONS=1 will auto-skip permissions in all modes'
+
+# Setup git-protector for guser
+# Git Protector wraps rm/mv/rmdir commands to prevent accidental deletion of .git directories
+if [[ ! -f \$HOME/.bashrc ]] || ! grep -q 'git-protector' \$HOME/.bashrc; then
+    cat >> \$HOME/.bashrc <<'BASHRC_APPEND'
+
+# Load Git Protector (protects .git directories from accidental deletion)
+if [[ -f /usr/local/bin/git-protector.sh ]]; then
+    source /usr/local/bin/git-protector.sh
+fi
+BASHRC_APPEND
+    chown ${user_id}:${group_id} \$HOME/.bashrc
+    echo '✅ Enabled Git Protector (dual-layer protection)'
+    echo '   - Layer 1: Command wrapping (rm/mv/rmdir functions)'
+    echo '   - Layer 2: System command replacement (/bin/rm, /bin/mv, /bin/rmdir)'
+fi
 EOF
     )
 

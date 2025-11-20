@@ -4,7 +4,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)](https://www.docker.com/)
-[![Version](https://img.shields.io/badge/Version-1.0.1-green.svg)](./VERSION)
+[![Version](https://img.shields.io/badge/Version-1.0.7-green.svg)](./VERSION)
 
 ## ✨ Features
 
@@ -13,6 +13,7 @@
 - 🌐 **Remote Control** - Supports Happy remote mode, control AI Agents from your phone anywhere, anytime
 - 📦 **Complete Isolation** - Each project gets its own container with fully isolated directories, processes, and networks
 - 🛡️ **Safe Mode** - Automatically skips permission prompts with a safe and harmless YOLO mode
+- 🔒 **Git Protection** - Built-in protection prevents AI agents from accidentally deleting `.git` directories
 - 🧹 **Optional Cleanup** - Supports automatic container deletion on exit to keep your environment clean
 - ⚙️ **Flexible Configuration** - Rich configuration options including port mapping, reference directories, proxy settings, and more
 - ⌨️ **Smart Completion** - Provides Zsh auto-completion plugin
