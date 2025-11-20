@@ -1,9 +1,9 @@
 [submodule "vendor/happy-cli"]
 	path = vendor/happy-cli
-	url = git@github.com:Gravtice/happy-cli.git
+	url = git@github.com:gravtice/happy-cli.git
 [submodule "vendor/happy"]
 	path = vendor/happy
-	url = git@github.com:Gravtice/happy.git
+	url = git@github.com:gravtice/happy.git
 [submodule "vendor/happy-server"]
 	path = vendor/happy-server
-	url = git@github.com:Gravtice/happy-server.git
+	url = git@github.com:gravtice/happy-server.git
