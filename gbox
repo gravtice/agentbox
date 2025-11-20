@@ -62,7 +62,7 @@ case "${1:-}" in
         shell_command "$2"
         ;;
     build)
-        build_image "$2"
+        build_image "${@:2}"
         ;;
     -h|--help|help)
         print_usage "$2"

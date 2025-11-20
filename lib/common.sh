@@ -316,7 +316,7 @@ Common Commands:
 Advanced Features:
     gbox oauth <cmd>                            OAuth account management
     gbox keepalive <cmd>                        Container maintenance management
-    gbox build                                  Build container image
+    gbox build [--no-cache]                     Build container image
     gbox pull [tag]                             Pull pre-built image
     gbox status                                 Show detailed status of all containers
     gbox exec <container-name> <command>        Execute command in container
@@ -385,11 +385,13 @@ Container Maintenance Management:
 
 Image Building and Distribution:
     gbox build                                  # Build image (includes Playwright)
+    gbox build --no-cache                       # Force rebuild without cache (for updating tools)
     gbox pull [tag]                             # Pull pre-built image
     gbox push [tag]                             # Push image to Docker Hub
 
     # Image repository: docker.io/gravtice/agentbox
     # Push requires login first: docker login
+    # Use --no-cache when Claude Code/Codex/Gemini versions upgrade
 
 Container Resource Configuration:
     # Method 1: Using .env file (recommended)

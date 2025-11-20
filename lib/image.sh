@@ -29,7 +29,21 @@ function ensure_image() {
 # ============================================
 
 function build_image() {
+    local no_cache=""
     local dockerfile="Dockerfile"
+
+    # Parse options
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --no-cache)
+                no_cache="--no-cache"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
 
     # Use SCRIPT_DIR defined in the main gbox script (project root directory)
     local dockerfile_path="$SCRIPT_DIR/$dockerfile"
@@ -55,6 +69,11 @@ function build_image() {
     echo -e "${YELLOW}Image name: $IMAGE_FULL${NC}"
     echo -e "${YELLOW}Dockerfile: $dockerfile_path${NC}"
     echo -e "${YELLOW}Use domestic mirror: $use_china_mirror${NC}"
+    if [[ -n "$no_cache" ]]; then
+        echo -e "${YELLOW}Cache: disabled (forcing rebuild)${NC}"
+    else
+        echo -e "${YELLOW}Cache: enabled${NC}"
+    fi
     echo ""
 
     # Update git submodule (happy-cli)
@@ -71,6 +90,7 @@ function build_image() {
 
     # Switch to project root directory to execute docker build, ensure context is correct
     ( cd "$SCRIPT_DIR" && docker build \
+        $no_cache \
         -f "$dockerfile" \
         --build-arg USE_CHINA_MIRROR="$use_china_mirror" \
         -t "$IMAGE_FULL" \
