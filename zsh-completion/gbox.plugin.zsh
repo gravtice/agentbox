@@ -100,6 +100,12 @@ _gbox() {
                         esac
                     fi
                     ;;
+                build)
+                    # build parameter completion
+                    if (( CURRENT == 2 )); then
+                        _arguments '--no-cache[Force rebuild without using Docker cache]'
+                    fi
+                    ;;
                 help)
                     # help parameter completion
                     if (( CURRENT == 2 )); then
