@@ -42,7 +42,7 @@ Container Daemon (happy-daemon)
 AI Agent (Claude Code)
 ```
 
-See [Happy Architecture](./docs/ARCHITECTURE.md#-happy-远程控制架构) for detailed architecture diagrams.
+See [Happy Architecture](./docs/ARCHITECTURE.md#-happy-remote-control-architecture) for detailed architecture diagrams.
 
 ## Core Architecture
 
