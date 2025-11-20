@@ -1,4 +1,4 @@
-# AgentBox
+# Gravtice AgentBox
 
 > Containerized AI Agent runtime tool, currently supporting Claude Code, Codex, and Gemini CLI
 

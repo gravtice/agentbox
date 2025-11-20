@@ -1,6 +1,6 @@
-# AgentBox Quick Start
+# Gravtice AgentBox Quick Start
 
-Get started with AgentBox in 5 minutes!
+Get started with Gravtice AgentBox in 5 minutes!
 
 ## 📋 Prerequisites
 

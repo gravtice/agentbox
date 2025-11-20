@@ -1,6 +1,6 @@
-# AgentBox 快速入门
+# Gravtice AgentBox 快速入门
 
-5分钟快速上手 AgentBox！
+5分钟快速上手 Gravtice AgentBox！
 
 ## 📋 准备工作
 
