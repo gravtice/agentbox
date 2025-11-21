@@ -89,7 +89,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # Configure npm mirror source (use Taobao mirror for China timezone)
 RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
@@ -97,7 +98,8 @@ RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
     fi
 
 # Install Claude Code CLI (install globally via npm)
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code && \
+    npm cache clean --force
 
 # Install happy-coder from build stage (includes permission handling fixes)
 # happy calls claude inside the container, all communication happens within the container
@@ -106,10 +108,12 @@ RUN npm install -g /tmp/happy-coder-*.tgz && \
     rm /tmp/happy-coder-*.tgz
 
 # Install OpenAI Codex CLI (coding assistant tool)
-RUN npm install -g @openai/codex
+RUN npm install -g @openai/codex && \
+    npm cache clean --force
 
 # Install Google Gemini CLI (AI terminal assistant)
-RUN npm install -g @google/gemini-cli
+RUN npm install -g @google/gemini-cli && \
+    npm cache clean --force
 
 # Pre-install playwright and its browser dependencies
 # This adds approximately 500MB to image size, but ensures playwright MCP works properly
@@ -121,7 +125,8 @@ RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
     fi && \
     npm install -g playwright@1.48.0 && \
     npx playwright install chromium && \
-    chmod -R 777 /usr/local/share/playwright
+    chmod -R 777 /usr/local/share/playwright && \
+    npm cache clean --force
 # Note: Skip install-deps because all necessary system dependencies are already installed in the apt-get step above
 
 # Set shared directory permissions, allow all users to create subdirectories and files
