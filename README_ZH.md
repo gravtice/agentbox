@@ -35,42 +35,99 @@ brew install jq
 sudo apt-get install jq
 ```
 
-## 🚀 快速开始
+## 📦 安装
 
-### 1. 克隆仓库
+AgentBox 提供一键安装脚本，自动完成以下操作：
+- 将 `gbox` 安装到 `~/.local/bin`
+- 配置 Shell PATH 环境变量
+- 安装 Shell 自动补全（如果可用）
+
+### 快速安装
 
 ```bash
+# 克隆仓库
 git clone https://github.com/Gravtice/AgentBox.git
 cd AgentBox
+
+# 运行安装脚本
+./install.sh
+
+# 重新加载 Shell 配置
+source ~/.zshrc  # 或 source ~/.bashrc
 ```
 
-### 2. 构建镜像
+安装完成后，你可以在任何位置使用 `gbox` 命令：
 
 ```bash
-./gbox build
+# 验证安装
+gbox --version
+
+# 拉取或构建镜像
+gbox pull        # 拉取预构建镜像（推荐）
+gbox build       # 或本地构建
+
+# 开始使用
+cd ~/projects/myapp
+gbox claude
 ```
 
-### 3. 启动 AI Agent
+### 手动安装
+
+如果你不想进行系统级安装，可以直接在克隆的仓库中使用 `gbox`：
+
+```bash
+cd /path/to/AgentBox
+./gbox claude
+```
+
+### 卸载
+
+卸载 AgentBox：
+
+```bash
+cd /path/to/AgentBox
+./uninstall.sh
+```
+
+卸载脚本会：
+- 停止并删除所有 AgentBox 容器
+- 从 `~/.local/bin` 删除 `gbox`
+- 清理 PATH 配置
+- 可选删除 `~/.gbox` 配置数据
+
+## 🚀 快速开始
+
+### 1. 拉取或构建镜像
+
+```bash
+# 方式 1: 拉取预构建镜像（更快，推荐）
+gbox pull
+
+# 方式 2: 本地构建（较慢，用于自定义修改）
+gbox build
+```
+
+### 2. 启动 AI Agent
 
 ```bash
 # 本地模式：在当前目录启动 Claude Code
-./gbox claude
+gbox claude
 
 # 远程控制模式：启动 Happy + Claude Code
-./gbox happy claude
+gbox happy claude
 
 # 启动其他 AI Agent
-./gbox codex                            # 启动 Codex
-./gbox gemini                           # 启动 Gemini
+gbox codex                            # 启动 Codex
+gbox gemini                           # 启动 Gemini
 
 # 指定工作目录
 cd ~/projects/myapp
-./gbox claude
+gbox claude
 ```
 
 就这么简单！容器会自动创建、启动，退出时可选择自动清理。
 
-> 💡 **提示**: 查看 [快速入门指南](./QUICKSTART_ZH.md) 了解更多使用方法
+> 💡 **提示**: 如果没有系统级安装，使用 `./gbox` 代替 `gbox`。查看 [快速入门指南](./QUICKSTART_ZH.md) 了解更多使用方法
 
 ## 📖 文档
 
@@ -90,7 +147,7 @@ cd ~/projects/myapp
 
 ```bash
 cd ~/projects/my-webapp
-./gbox claude
+gbox claude
 # Claude Code 启动，开始编码...
 # Ctrl+D 退出，容器可自动清理（默认保留）
 ```
@@ -100,21 +157,21 @@ cd ~/projects/my-webapp
 ```bash
 # 项目 A
 cd ~/projects/project-a
-./gbox claude    # 容器: gbox-claude-project-a
+gbox claude    # 容器: gbox-claude-project-a
 
 # 项目 B
 cd ~/projects/project-b
-./gbox claude    # 容器: gbox-claude-project-b
+gbox claude    # 容器: gbox-claude-project-b
 
 # 查看所有容器
-./gbox list
+gbox list
 ```
 
 ### 场景 3: 远程控制
 
 ```bash
 cd ~/projects/team-project
-./gbox happy claude
+gbox happy claude
 # 1. Happy daemon 启动
 # 2. Claude Code 启动
 # 3. 在手机上通过 Happy App 远程控制
@@ -124,42 +181,42 @@ cd ~/projects/team-project
 
 ```bash
 # 大型项目需要更多资源
-./gbox claude --memory 16g --cpu 8
+gbox claude --memory 16g --cpu 8
 
 # 需要访问容器内服务
-./gbox claude --ports "8000:8000;3000:3000"
+gbox claude --ports "8000:8000;3000:3000"
 
 # 跨项目参考其他代码
-./gbox claude --ref-dirs "/path/to/reference-project"
+gbox claude --ref-dirs "/path/to/reference-project"
 ```
 
 ## 🔧 常用命令
 
 ```bash
 # Agent 启动
-./gbox claude               # 启动 Claude Code
-./gbox happy claude         # 启动 Happy + Claude Code
-./gbox codex                # 启动 Codex
+gbox claude               # 启动 Claude Code
+gbox happy claude         # 启动 Happy + Claude Code
+gbox codex                # 启动 Codex
 
 # 容器管理
-./gbox list                 # 查看运行中的容器
-./gbox status               # 查看所有容器状态
-./gbox stop <容器名>        # 停止容器
-./gbox logs <容器名>        # 查看容器日志
-./gbox shell <容器名>       # 登录容器 shell
+gbox list                 # 查看运行中的容器
+gbox status               # 查看所有容器状态
+gbox stop <容器名>        # 停止容器
+gbox logs <容器名>        # 查看容器日志
+gbox shell <容器名>       # 登录容器 shell
 
 # 镜像管理
-./gbox build                # 构建镜像
-./gbox pull                 # 拉取预构建镜像
+gbox build                # 构建镜像
+gbox pull                 # 拉取预构建镜像
 
 # OAuth 管理
-./gbox oauth claude status  # 查看账号状态
-./gbox oauth claude switch  # 切换账号
+gbox oauth claude status  # 查看账号状态
+gbox oauth claude switch  # 切换账号
 
 # MCP 服务器管理
-./gbox claude -- mcp list   # 列出已安装的 MCP 服务器
-./gbox claude -- mcp add <name> -s user -- <command>  # 添加 MCP 服务器
-./gbox claude -- mcp remove <name>  # 删除 MCP 服务器
+gbox claude -- mcp list   # 列出已安装的 MCP 服务器
+gbox claude -- mcp add <name> -s user -- <command>  # 添加 MCP 服务器
+gbox claude -- mcp remove <name>  # 删除 MCP 服务器
 ```
 
 ## 🧩 常用 MCP 服务
@@ -168,16 +225,16 @@ cd ~/projects/team-project
 
 ```bash
 # Playwright - 浏览器自动化和网页截图
-./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 
 # Codex CLI - 安全的终端命令执行
-./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
+gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
 
 # Filesystem - 文件系统访问
-./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
+gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
 
 # GitHub - GitHub 仓库操作
-./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
+gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
 ```
 
 > 💡 安装后需要退出并重新进入会话生效。更多 MCP 服务器请查看 [快速入门](./QUICKSTART.md#3-mcp-服务器管理)
@@ -195,14 +252,14 @@ export GBOX_CPU=4
 export GBOX_PORTS="8000:8000;3000:3000"
 
 # 启动时使用环境变量配置
-./gbox claude
+gbox claude
 ```
 
 ### 命令行参数
 
 ```bash
 # 完整配置示例
-./gbox claude \
+gbox claude \
   --memory 16g \
   --cpu 8 \
   --ports "8000:8000;5432:5432" \
@@ -239,7 +296,7 @@ export GBOX_PORTS="8000:8000;3000:3000"
 
 ```bash
 # 查看容器日志
-./gbox logs <容器名>
+gbox logs <容器名>
 
 # 检查 Docker 状态
 docker ps -a | grep gbox
@@ -249,25 +306,25 @@ docker ps -a | grep gbox
 
 ```bash
 # 查看账号状态
-./gbox oauth claude status
+gbox oauth claude status
 
 # 切换账号
-./gbox oauth claude switch
+gbox oauth claude switch
 ```
 
 ### 端口冲突
 
 ```bash
 # 使用不同端口
-./gbox claude --ports "8888:8000"
+gbox claude --ports "8888:8000"
 ```
 
 ### Playwright MCP 浏览器占用
 
 ```bash
 # 卸载并使用 --isolated 参数重新安装
-./gbox claude -- mcp remove playwright
-./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+gbox claude -- mcp remove playwright
+gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 ```
 
 更多问题请查看 [故障排查文档](./QUICKSTART_ZH.md#故障排查)

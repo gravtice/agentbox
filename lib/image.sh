@@ -48,8 +48,21 @@ function build_image() {
     # Use SCRIPT_DIR defined in the main gbox script (project root directory)
     local dockerfile_path="$SCRIPT_DIR/$dockerfile"
 
-    if [[ ! -f "$dockerfile_path" ]]; then
-        echo -e "${RED}Error: $dockerfile_path does not exist${NC}"
+    # Check if Dockerfile exists
+    if [ ! -f "$dockerfile_path" ]; then
+        echo -e "${RED}Error: Dockerfile not found${NC}"
+        echo -e "${YELLOW}Path: $dockerfile_path${NC}"
+        echo ""
+        echo -e "${BLUE}Note: ${NC}Building images requires the full source repository."
+        echo -e "If you installed gbox via install.sh, please either:"
+        echo ""
+        echo -e "  1. ${GREEN}Pull the pre-built image (recommended):${NC}"
+        echo -e "     gbox pull"
+        echo ""
+        echo -e "  2. ${GREEN}Build from the source directory:${NC}"
+        echo -e "     cd /path/to/AgentBox"
+        echo -e "     ./gbox build"
+        echo ""
         exit 1
     fi
 

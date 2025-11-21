@@ -4,6 +4,7 @@
       "Bash(git:*)",
       "Bash(cat:*)",
       "Bash(docker:*)",
+      "Bash(gbox:*)",
       "Bash(chmod:*)"
     ],
     "deny": [],

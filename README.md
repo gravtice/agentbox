@@ -36,42 +36,99 @@ brew install jq
 sudo apt-get install jq
 ```
 
-## 🚀 Quick Start
+## 📦 Installation
 
-### 1. Clone the Repository
+AgentBox provides a one-click installation script that automatically:
+- Installs `gbox` to `~/.local/bin`
+- Configures PATH in your shell
+- Installs shell completion (if available)
+
+### Quick Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/Gravtice/AgentBox.git
 cd AgentBox
+
+# Run installation script
+./install.sh
+
+# Reload shell configuration
+source ~/.zshrc  # or source ~/.bashrc
 ```
 
-### 2. Build the Image
+After installation, you can use `gbox` command from anywhere:
 
 ```bash
-./gbox build
+# Verify installation
+gbox --version
+
+# Pull or build the image
+gbox pull        # Pull pre-built image (recommended)
+gbox build       # Or build locally
+
+# Start using it
+cd ~/projects/myapp
+gbox claude
 ```
 
-### 3. Start an AI Agent
+### Manual Installation
+
+If you prefer not to install system-wide, you can use `gbox` directly from the cloned repository:
+
+```bash
+cd /path/to/AgentBox
+./gbox claude
+```
+
+### Uninstallation
+
+To uninstall AgentBox:
+
+```bash
+cd /path/to/AgentBox
+./uninstall.sh
+```
+
+The uninstall script will:
+- Stop and remove all AgentBox containers
+- Remove `gbox` from `~/.local/bin`
+- Clean up PATH configuration
+- Optionally remove configuration data from `~/.gbox`
+
+## 🚀 Quick Start
+
+### 1. Pull or Build the Image
+
+```bash
+# Option 1: Pull pre-built image (faster, recommended)
+gbox pull
+
+# Option 2: Build locally (slower, for custom modifications)
+gbox build
+```
+
+### 2. Start an AI Agent
 
 ```bash
 # Local mode: Start Claude Code in current directory
-./gbox claude
+gbox claude
 
 # Remote control mode: Start Happy + Claude Code
-./gbox happy claude
+gbox happy claude
 
 # Start other AI Agents
-./gbox codex                            # Start Codex
-./gbox gemini                           # Start Gemini
+gbox codex                            # Start Codex
+gbox gemini                           # Start Gemini
 
 # Specify working directory
 cd ~/projects/myapp
-./gbox claude
+gbox claude
 ```
 
 That's it! Containers are automatically created and started, with optional automatic cleanup on exit.
 
-> 💡 **Tip**: Check out the [Quick Start Guide](./QUICKSTART.md) for more usage examples
+> 💡 **Tip**: If you didn't install system-wide, use `./gbox` instead of `gbox`. Check out the [Quick Start Guide](./QUICKSTART.md) for more usage examples
 
 ## 📖 Documentation
 
@@ -91,7 +148,7 @@ That's it! Containers are automatically created and started, with optional autom
 
 ```bash
 cd ~/projects/my-webapp
-./gbox claude
+gbox claude
 # Claude Code starts, begin coding...
 # Ctrl+D to exit, container can auto-cleanup (default: kept)
 ```
@@ -101,21 +158,21 @@ cd ~/projects/my-webapp
 ```bash
 # Project A
 cd ~/projects/project-a
-./gbox claude    # Container: gbox-claude-project-a
+gbox claude    # Container: gbox-claude-project-a
 
 # Project B
 cd ~/projects/project-b
-./gbox claude    # Container: gbox-claude-project-b
+gbox claude    # Container: gbox-claude-project-b
 
 # View all containers
-./gbox list
+gbox list
 ```
 
 ### Scenario 3: Remote Control
 
 ```bash
 cd ~/projects/team-project
-./gbox happy claude
+gbox happy claude
 # 1. Happy daemon starts
 # 2. Claude Code starts
 # 3. Control remotely via Happy App on your phone
@@ -125,42 +182,42 @@ cd ~/projects/team-project
 
 ```bash
 # Large project requiring more resources
-./gbox claude --memory 16g --cpu 8
+gbox claude --memory 16g --cpu 8
 
 # Need to access services inside container
-./gbox claude --ports "8000:8000;3000:3000"
+gbox claude --ports "8000:8000;3000:3000"
 
 # Cross-project reference to other code
-./gbox claude --ref-dirs "/path/to/reference-project"
+gbox claude --ref-dirs "/path/to/reference-project"
 ```
 
 ## 🔧 Common Commands
 
 ```bash
 # Agent startup
-./gbox claude               # Start Claude Code
-./gbox happy claude         # Start Happy + Claude Code
-./gbox codex                # Start Codex
+gbox claude               # Start Claude Code
+gbox happy claude         # Start Happy + Claude Code
+gbox codex                # Start Codex
 
 # Container management
-./gbox list                 # View running containers
-./gbox status               # View all container status
-./gbox stop <container-name>        # Stop container
-./gbox logs <container-name>        # View container logs
-./gbox shell <container-name>       # Login to container shell
+gbox list                 # View running containers
+gbox status               # View all container status
+gbox stop <container-name>        # Stop container
+gbox logs <container-name>        # View container logs
+gbox shell <container-name>       # Login to container shell
 
 # Image management
-./gbox build                # Build image
-./gbox pull                 # Pull pre-built image
+gbox build                # Build image
+gbox pull                 # Pull pre-built image
 
 # OAuth management
-./gbox oauth claude status  # Check account status
-./gbox oauth claude switch  # Switch account
+gbox oauth claude status  # Check account status
+gbox oauth claude switch  # Switch account
 
 # MCP server management
-./gbox claude -- mcp list   # List installed MCP servers
-./gbox claude -- mcp add <name> -s user -- <command>  # Add MCP server
-./gbox claude -- mcp remove <name>  # Remove MCP server
+gbox claude -- mcp list   # List installed MCP servers
+gbox claude -- mcp add <name> -s user -- <command>  # Add MCP server
+gbox claude -- mcp remove <name>  # Remove MCP server
 ```
 
 ## 🧩 Common MCP Services
@@ -169,16 +226,16 @@ Extend Claude Code's capabilities by installing recommended MCP servers:
 
 ```bash
 # Playwright - Browser automation and web screenshots
-./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 
 # Codex CLI - Safe terminal command execution
-./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
+gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
 
 # Filesystem - File system access
-./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
+gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
 
 # GitHub - GitHub repository operations
-./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
+gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
 ```
 
 > 💡 After installation, you need to exit and re-enter the session for changes to take effect. For more MCP servers, see [Quick Start Guide](./QUICKSTART.md#3-mcp-server-management)
@@ -196,14 +253,14 @@ export GBOX_CPU=4
 export GBOX_PORTS="8000:8000;3000:3000"
 
 # Start using environment variable configuration
-./gbox claude
+gbox claude
 ```
 
 ### Command Line Parameters
 
 ```bash
 # Complete configuration example
-./gbox claude \
+gbox claude \
   --memory 16g \
   --cpu 8 \
   --ports "8000:8000;5432:5432" \
@@ -240,7 +297,7 @@ See [Architecture Design Documentation](./docs/ARCHITECTURE.md) for details
 
 ```bash
 # View container logs
-./gbox logs <container-name>
+gbox logs <container-name>
 
 # Check Docker status
 docker ps -a | grep gbox
@@ -250,25 +307,25 @@ docker ps -a | grep gbox
 
 ```bash
 # Check account status
-./gbox oauth claude status
+gbox oauth claude status
 
 # Switch account
-./gbox oauth claude switch
+gbox oauth claude switch
 ```
 
 ### Port Conflicts
 
 ```bash
 # Use different ports
-./gbox claude --ports "8888:8000"
+gbox claude --ports "8888:8000"
 ```
 
 ### Playwright MCP Browser Conflicts
 
 ```bash
 # Uninstall and reinstall with --isolated flag
-./gbox claude -- mcp remove playwright
-./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+gbox claude -- mcp remove playwright
+gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 ```
 
 For more issues, see [Troubleshooting Documentation](./QUICKSTART.md#troubleshooting)
