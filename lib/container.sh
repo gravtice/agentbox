@@ -457,17 +457,24 @@ function stop_container() {
 
 function stop_all_containers() {
     echo -e "${YELLOW}Stopping and removing all gbox containers...${NC}"
-    local containers=$(docker ps --filter "name=${CONTAINER_PREFIX}-" -q)
+    # Query all containers (including stopped ones) with -a flag
+    local containers=$(docker ps -a --filter "name=${CONTAINER_PREFIX}-" -q)
 
     if [[ -z "$containers" ]]; then
-        echo -e "${YELLOW}No running containers${NC}"
+        echo -e "${YELLOW}No gbox containers found${NC}"
         return
     fi
 
     # Get container names before deletion for Happy cleanup
-    local container_names=$(docker ps --filter "name=${CONTAINER_PREFIX}-" --format '{{.Names}}')
+    local container_names=$(docker ps -a --filter "name=${CONTAINER_PREFIX}-" --format '{{.Names}}')
 
-    echo "$containers" | xargs docker stop
+    # Stop running containers first
+    local running_containers=$(docker ps --filter "name=${CONTAINER_PREFIX}-" -q)
+    if [[ -n "$running_containers" ]]; then
+        echo "$running_containers" | xargs docker stop
+    fi
+
+    # Remove all containers (both stopped and just-stopped)
     echo "$containers" | xargs docker rm
 
     # Clean up Happy config directories for all containers
@@ -514,6 +521,28 @@ function clean_containers() {
     # Note: Key format is "{workDir}:{agent}"
     local all_containers=$(docker ps -a --format '{{.Names}}')
     safe_jq_update 'to_entries | map(select($containers | contains(.value))) | from_entries' --arg containers "$all_containers"
+
+    # Clean up orphaned Happy config directories (directories whose containers no longer exist)
+    echo -e "${YELLOW}Checking for orphaned Happy config directories...${NC}"
+    local orphaned_count=0
+    for dir in "$GBOX_HAPPY_DIR"/*; do
+        if [[ -d "$dir" ]] && [[ "$(basename "$dir")" =~ ^gbox- ]]; then
+            local container_name=$(basename "$dir")
+
+            # Check if container exists (running or stopped)
+            if ! docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
+                echo -e "${YELLOW}  Removing orphaned directory: $container_name${NC}"
+                rm -rf "$dir"
+                ((orphaned_count++))
+            fi
+        fi
+    done
+
+    if [[ $orphaned_count -gt 0 ]]; then
+        echo -e "${GREEN}✓ Removed $orphaned_count orphaned Happy config director(y/ies)${NC}"
+    else
+        echo -e "${GREEN}✓ No orphaned Happy config directories found${NC}"
+    fi
 
     echo -e "${GREEN}Done${NC}"
 }
