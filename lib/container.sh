@@ -439,6 +439,16 @@ function stop_container() {
     # Remove container
     docker rm "$container_name" > /dev/null
 
+    # Clean up Happy config directory for this container
+    # This prevents stale daemon.state.json and other Happy state files from being reused
+    # when a container with the same name is created again
+    local happy_container_dir="$GBOX_HAPPY_DIR/$container_name"
+    if [[ -d "$happy_container_dir" ]]; then
+        echo -e "${YELLOW}Cleaning up Happy config directory...${NC}"
+        rm -rf "$happy_container_dir"
+        echo -e "${GREEN}✓ Happy config directory removed${NC}"
+    fi
+
     # Clean up mapping (delete directly using container name)
     remove_container_mapping_by_container "$container_name"
 
@@ -454,8 +464,21 @@ function stop_all_containers() {
         return
     fi
 
+    # Get container names before deletion for Happy cleanup
+    local container_names=$(docker ps --filter "name=${CONTAINER_PREFIX}-" --format '{{.Names}}')
+
     echo "$containers" | xargs docker stop
     echo "$containers" | xargs docker rm
+
+    # Clean up Happy config directories for all containers
+    echo -e "${YELLOW}Cleaning up Happy config directories...${NC}"
+    while IFS= read -r container_name; do
+        local happy_container_dir="$GBOX_HAPPY_DIR/$container_name"
+        if [[ -d "$happy_container_dir" ]]; then
+            rm -rf "$happy_container_dir"
+            echo -e "${GREEN}✓ Removed Happy config for: $container_name${NC}"
+        fi
+    done <<< "$container_names"
 
     # Clean up all mappings
     echo '{}' > "$STATE_FILE"
@@ -466,10 +489,25 @@ function stop_all_containers() {
 function clean_containers() {
     echo -e "${YELLOW}Cleaning stopped containers and mappings...${NC}"
 
+    # Get stopped container names before deletion for Happy cleanup
+    local stopped_names=$(docker ps -a --filter "name=${CONTAINER_PREFIX}-" --filter "status=exited" --format '{{.Names}}')
+
     # Clean up Docker containers
     local stopped=$(docker ps -a --filter "name=${CONTAINER_PREFIX}-" --filter "status=exited" -q)
     if [[ -n "$stopped" ]]; then
         echo "$stopped" | xargs docker rm
+
+        # Clean up Happy config directories for stopped containers
+        if [[ -n "$stopped_names" ]]; then
+            echo -e "${YELLOW}Cleaning up Happy config directories...${NC}"
+            while IFS= read -r container_name; do
+                local happy_container_dir="$GBOX_HAPPY_DIR/$container_name"
+                if [[ -d "$happy_container_dir" ]]; then
+                    rm -rf "$happy_container_dir"
+                    echo -e "${GREEN}✓ Removed Happy config for: $container_name${NC}"
+                fi
+            done <<< "$stopped_names"
+        fi
     fi
 
     # Clean up invalid mappings (filter directly with jq)
