@@ -21,14 +21,17 @@ AgentBox 的核心思想是"工作目录驱动":
 
 **示例:**
 ```bash
-~/projects/my-webapp  → gbox-claude-my-webapp
-~/code/api-service    → gbox-claude-api-service
+~/projects/my-webapp  → gbox-my-webapp
+~/code/api-service    → gbox-api-service
 ```
+
+**核心原则:** 一个仓库对应一个容器，无论 agent 或运行模式。
 
 **优势:**
 - 无需手动指定容器名
 - 多项目自然隔离
 - 容器名可预测
+- 所有 agent（claude、codex、gemini）和模式（本地/远程）共用同一容器
 
 ### 配置共享机制
 
@@ -134,7 +137,9 @@ AgentBox 的核心思想是"工作目录驱动":
    ↓
 3. 初始化配置 (~/.gbox/)
    ↓
-4. 生成容器名 (gbox-claude-{dir})
+4. 生成容器名 (gbox-{dirname})
+   ├─ 检测主仓库目录（支持 worktree）
+   └─ 所有 agent 和模式使用相同名称
    ↓
 5. 检查容器是否存在
    ├─ 存在: 连接到已有容器
@@ -201,7 +206,7 @@ Happy 提供了完整的远程控制方案，让你可以在手机上随时随�
 ┌─────────────────────────────────────────────────────────────────┐
 │                          宿主机                                   │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    容器 (gbox-happy-claude-*)              │  │
+│  │                    容器 (gbox-{project})                   │  │
 │  │                                                            │  │
 │  │  ┌──────────────────┐         ┌────────────────────┐     │  │
 │  │  │  happy-daemon    │←───────→│   Claude Code      │     │  │

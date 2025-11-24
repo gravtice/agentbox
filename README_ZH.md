@@ -4,18 +4,19 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)](https://www.docker.com/)
-[![Version](https://img.shields.io/badge/Version-1.0.1-green.svg)](./VERSION)
+[![Version](https://img.shields.io/badge/Version-1.0.8-green.svg)](./VERSION)
 
 ## ✨ 特性
 
 - 🚀 **一键启动** - 自动创建和管理容器，如同本地使用
-- 🔐 **OAuth 共享** - 所有容器共享登录态，无需重复登录
 - 🌐 **远程控制** - 支持 Happy 远程模式，随时随地在手机上控制 AI Agent
-- 📦 **完全隔离** - 每个项目独立容器，目录、进程、网络完全隔离，互不影响
 - 🛡️ **安全模式** - 自动跳过权限询问，安全无害的 YOLO 模式
+- 📦 **完全隔离** - 每个项目独立容器，目录、进程、网络完全隔离，互不影响
+- 🔒 **Git 保护** - 内置保护机制，防止 AI Agent 意外删除 `.git` 目录
+- ⌨️ **智能补全** - 提供 Zsh 自动补全插件
+- **OAuth 共享** - 所有容器共享登录态，无需重复登录
 - 🧹 **可选清理** - 支持退出时自动删除容器，保持环境整洁
 - ⚙️ **灵活配置** - 支持端口映射、参考目录、代理等丰富配置
-- ⌨️ **智能补全** - 提供 Zsh 自动补全插件
 
 ## 📋 前置要求
 
@@ -157,11 +158,11 @@ gbox claude
 ```bash
 # 项目 A
 cd ~/projects/project-a
-gbox claude    # 容器: gbox-claude-project-a
+gbox claude    # 容器: gbox-project-a
 
 # 项目 B
 cd ~/projects/project-b
-gbox claude    # 容器: gbox-claude-project-b
+gbox claude    # 容器: gbox-project-b
 
 # 查看所有容器
 gbox list
@@ -284,9 +285,11 @@ gbox claude \
 
 容器命名规则:
 ```bash
-~/projects/my-webapp     → gbox-claude-my-webapp
-~/code/backend-api       → gbox-happy-claude-backend-api
+~/projects/my-webapp     → gbox-my-webapp
+~/code/backend-api       → gbox-backend-api
 ```
+
+**一个仓库对应一个容器** - 无论使用哪个 agent（claude、codex、gemini）或模式（本地/远程），都使用同一个容器。
 
 详见 [架构设计文档](./docs/ARCHITECTURE_ZH.md)
 

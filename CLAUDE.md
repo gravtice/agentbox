@@ -64,11 +64,11 @@ See [Happy Architecture](./docs/ARCHITECTURE.md#-happy-remote-control-architectu
 AgentBox uses the current working directory to automatically generate container names:
 
 ```
-~/projects/my-webapp  → gbox-claude-my-webapp
-~/code/api-service    → gbox-happy-claude-api-service
+~/projects/my-webapp  → gbox-my-webapp
+~/code/api-service    → gbox-api-service
 ```
 
-This enables automatic project isolation without manual container naming.
+This enables automatic project isolation without manual container naming. **One repository corresponds to one container**, regardless of which agent (claude, codex, gemini) or run mode (local/remote) you use.
 
 ### Shared Configuration
 
@@ -120,9 +120,11 @@ AgentBox automatically detects and supports git worktrees:
   └── feature-b/                 # Worktree 2
 ```
 
-**Detection logic**: See `get_main_repo_dir()` in `lib/container.sh:38-101`
+**Detection logic**: See `get_main_repo_dir()` in `lib/docker.sh:67-140`
 
 **Mount strategy**: Both main directory and worktrees directory are mounted, allowing worktrees to access the main `.git` directory.
+
+**Important**: The same container is used whether you start from the main repository or any worktree subdirectory - `get_main_repo_dir()` always returns the main repository path.
 
 ## Vendor Directory Structure
 
@@ -269,13 +271,17 @@ bash -n lib/*.sh
 ### Container Lifecycle (`lib/container.sh`)
 - `start_container()` (line 104) - Create/start container with all mounts
 - `stop_container()` (line 502) - Stop and optionally delete container
-- `generate_container_name()` (line 543) - Generate predictable container names
-- `get_main_repo_dir()` (line 38) - Detect git worktree main directory
-- `add_port_mapping()` (line 572) - Parse and add port mappings
+
+### Docker Utilities (`lib/docker.sh`)
+- `get_main_repo_dir()` (line 67) - Detect git worktree main directory (supports both git and non-git worktrees)
+- `ensure_network()` (line 24) - Ensure Docker network exists
+- `is_container_running()` (line 36) - Check if container is running
+- `wait_for_container_ready()` (line 42) - Wait for container to be ready
 
 ### Agent Sessions (`lib/agent.sh`)
-- `run_agent_session()` (line 33) - Main entry point for starting agents
-- `agent_session()` (line 365) - Wrapper that calls run_agent_session
+- `generate_container_name()` (line 43) - Generate container name from working directory (one repo = one container)
+- `agent_session()` (line 99) - Main entry point for starting agents
+- `parse_port_mappings()` (line 10) - Parse port mapping configuration
 - Supports agents: `claude`, `codex`, `gemini`
 
 ### OAuth Management (`lib/oauth.sh`)
@@ -285,11 +291,13 @@ bash -n lib/*.sh
 - Account files pattern: `.claude.json-email@example.com-001`
 
 ### State Management (`lib/state.sh`)
-- `init_state()` (line 17) - Initialize ~/.gbox/ structure
-- `init_gbox_config()` (line 71) - Create config directories
-- `init_git_config()` (line 120) - Copy git config for container use
-- `add_container_mapping()` (line 163) - Track container-directory mapping
-- `remove_container_mapping()` (line 174) - Clean up mapping
+- `init_state()` (line 72) - Initialize ~/.gbox/ structure and directories
+- `init_gitconfig()` (line 13) - Initialize shared git config for containers
+- `generate_state_key()` (line 123) - Generate state key from working directory (main repo path)
+- `get_container_by_workdir()` (line 138) - Get container name by working directory
+- `save_container_mapping()` (line 166) - Track container-directory mapping
+- `remove_container_mapping()` (line 176) - Clean up mapping by directory
+- `remove_container_mapping_by_container()` (line 185) - Clean up mapping by container name
 
 ### Image Management (`lib/image.sh`)
 - `build_image()` (line 21) - Build with auto-detected timezone/mirrors
@@ -349,13 +357,21 @@ export GBOX_CPU=4
 
 ### Container Naming Rules
 
-Format: `gbox-[mode]-[agent]-[dirname]`
+Format: `gbox-{dirname}`
+
+**One repository corresponds to one container**, regardless of agent (claude, codex, gemini) or run mode (local/remote).
 
 Examples:
-- `gbox-claude-myproject` (local mode)
-- `gbox-happy-claude-backend-api` (remote mode)
+- `/path/to/myproject` → `gbox-myproject`
+- `/path/to/backend-api` → `gbox-backend-api`
+- `/path/to/Prism-worktrees/v1.1.0` → `gbox-prism` (detected from worktree)
 
-See `generate_container_name()` in `lib/container.sh:543`
+The container name is always based on the **main repository directory**, ensuring:
+- Same container whether you start from main repo or any worktree
+- Same container for all agents (claude, codex, gemini)
+- Same container for both local and remote modes
+
+See `generate_container_name()` in `lib/agent.sh:43` and `get_main_repo_dir()` in `lib/docker.sh:67`
 
 ### Git Directory Protection
 
@@ -607,6 +623,12 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 <footer>
 ```
+
+**Guidelines**:
+- **Keep it concise**: Subject line should be brief and to the point (ideally < 50 characters)
+- **Focus on "what" and "why"**: Explain what changed and why, not how
+- **Body is optional**: Only add detailed explanation if necessary
+- **Use imperative mood**: "add feature" not "added feature" or "adds feature"
 
 **Types**:
 - `feat` - New feature

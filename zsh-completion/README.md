@@ -36,7 +36,7 @@ After typing `gbox claude ` and pressing `Tab`, auto-complete gbox parameters:
 Commands that require container names (`stop`, `logs`, `shell`, `exec`) automatically complete running containers:
 ```bash
 gbox stop <Tab>
-# Automatically shows: gbox-claude-project  gbox-codex-myapp  etc.
+# Automatically shows: gbox-project  gbox-myapp  etc.
 ```
 
 ### 5. Subcommand Completion

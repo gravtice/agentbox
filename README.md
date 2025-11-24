@@ -4,19 +4,19 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue.svg)](https://www.docker.com/)
-[![Version](https://img.shields.io/badge/Version-1.0.7-green.svg)](./VERSION)
+[![Version](https://img.shields.io/badge/Version-1.0.8-green.svg)](./VERSION)
 
 ## ✨ Features
 
 - 🚀 **One-Click Startup** - Automatically creates and manages containers, just like local usage
-- 🔐 **Shared OAuth** - All containers share login sessions, no repeated authentication
 - 🌐 **Remote Control** - Supports Happy remote mode, control AI Agents from your phone anywhere, anytime
-- 📦 **Complete Isolation** - Each project gets its own container with fully isolated directories, processes, and networks
 - 🛡️ **Safe Mode** - Automatically skips permission prompts with a safe and harmless YOLO mode
+- 📦 **Complete Isolation** - Each project gets its own container with fully isolated directories, processes, and networks
 - 🔒 **Git Protection** - Built-in protection prevents AI agents from accidentally deleting `.git` directories
+- ⌨️ **Smart Completion** - Provides Zsh auto-completion plugin
+-  **Shared OAuth** - All containers share login sessions, no repeated authentication
 - 🧹 **Optional Cleanup** - Supports automatic container deletion on exit to keep your environment clean
 - ⚙️ **Flexible Configuration** - Rich configuration options including port mapping, reference directories, proxy settings, and more
-- ⌨️ **Smart Completion** - Provides Zsh auto-completion plugin
 
 ## 📋 Prerequisites
 
@@ -158,11 +158,11 @@ gbox claude
 ```bash
 # Project A
 cd ~/projects/project-a
-gbox claude    # Container: gbox-claude-project-a
+gbox claude    # Container: gbox-project-a
 
 # Project B
 cd ~/projects/project-b
-gbox claude    # Container: gbox-claude-project-b
+gbox claude    # Container: gbox-project-b
 
 # View all containers
 gbox list
@@ -285,9 +285,11 @@ Host Machine                    Container
 
 Container naming convention:
 ```bash
-~/projects/my-webapp     → gbox-claude-my-webapp
-~/code/backend-api       → gbox-happy-claude-backend-api
+~/projects/my-webapp     → gbox-my-webapp
+~/code/backend-api       → gbox-backend-api
 ```
+
+**One repository corresponds to one container** - the same container is used regardless of which agent (claude, codex, gemini) or mode (local/remote) you use.
 
 See [Architecture Design Documentation](./docs/ARCHITECTURE.md) for details
 

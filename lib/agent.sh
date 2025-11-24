@@ -41,9 +41,7 @@ function parse_port_mappings() {
 # Container naming utility functions
 # ========================
 function generate_container_name() {
-    local run_mode="$1"
-    local agent="$2"
-    local work_dir="$3"
+    local work_dir="$1"
 
     # Get main repository directory (if it's a worktree, returns the main repository directory)
     # This ensures the same container name is used whether starting from the main directory or worktrees subdirectory
@@ -54,14 +52,9 @@ function generate_container_name() {
     # Convert to lowercase, replace illegal characters with hyphens
     local dir_part=$(echo "$dir_name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
 
-    # Generate different container names based on run mode
-    if [[ "$run_mode" == "only-local" ]]; then
-        # gbox-{agent}-{dirname}
-        echo "${CONTAINER_PREFIX}-${agent}-${dir_part}"
-    else
-        # gbox-happy-{agent}-{dirname}
-        echo "${CONTAINER_PREFIX}-happy-${agent}-${dir_part}"
-    fi
+    # Generate container name: gbox-{dirname}
+    # One repository corresponds to one container, regardless of agent or run mode
+    echo "${CONTAINER_PREFIX}-${dir_part}"
 }
 
 # ========================
@@ -136,11 +129,12 @@ function agent_session() {
     fi
     agent_cmd_prefix="$agent_cmd_prefix && exec "
 
-    # Generate container name based on run mode, agent, and working directory
-    local container_name=$(generate_container_name "$run_mode" "$agent" "$work_dir")
+    # Generate container name based on working directory
+    # One repository corresponds to one container, regardless of agent or run mode
+    local container_name=$(generate_container_name "$work_dir")
 
     # Check if container already exists
-    local existing_container=$(get_container_by_workdir_mode_agent "$work_dir" "$run_mode" "$agent")
+    local existing_container=$(get_container_by_workdir "$work_dir")
 
     local actual_container=""
     local container_created=0
@@ -152,7 +146,7 @@ function agent_session() {
         if ! docker ps -a --format '{{.Names}}' | grep -q "^${existing_container}$"; then
             # Container mapping exists but container actually doesn't (may have been manually deleted), clean up mapping
             echo -e "${YELLOW}Container mapping exists but container has been deleted, cleaning up state...${NC}"
-            remove_container_mapping "$work_dir" "$run_mode" "$agent"
+            remove_container_mapping "$work_dir"
             existing_container=""  # Clear it, will recreate later
         fi
     fi
@@ -248,7 +242,7 @@ function agent_session() {
             fi
 
             # Restore mapping relationship
-            save_container_mapping "$work_dir" "$run_mode" "$agent" "$container_name"
+            save_container_mapping "$work_dir" "$container_name"
             actual_container="$container_name"
             existed_before=true
 
@@ -304,7 +298,7 @@ function agent_session() {
             start_container "$container_name" "$work_dir" "$run_mode" "$agent"
 
             # Save mapping relationship
-            save_container_mapping "$work_dir" "$run_mode" "$agent" "$container_name"
+            save_container_mapping "$work_dir" "$container_name"
         fi
 
         # Display notification and execute
@@ -371,7 +365,7 @@ function agent_session() {
         docker rm "$actual_container" > /dev/null 2>&1
 
         # Clean up mapping relationship
-        remove_container_mapping "$work_dir" "$run_mode" "$agent"
+        remove_container_mapping "$work_dir"
 
         echo -e "${GREEN}✓ Container cleaned${NC}"
     else

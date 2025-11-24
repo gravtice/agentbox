@@ -41,7 +41,7 @@ cd ~/projects/myproject
 
 第一次启动时会:
 1. 自动创建配置目录 `~/.gbox/`
-2. 自动创建容器 `gbox-claude-myproject`
+2. 自动创建容器 `gbox-myproject`
 3. 启动 Claude Code
 4. 提示完成 OAuth 登录
 
@@ -83,14 +83,14 @@ cd ~/projects/myproject
 ```
 运行中的 gbox 容器:
 容器名                    工作目录              镜像
-gbox-claude-myproject   ~/projects/myproject  agentbox:1.0.1
+gbox-myproject   ~/projects/myproject  agentbox:1.0.1
 ```
 
 ### 停止容器
 
 ```bash
 # 停止指定容器
-./gbox stop gbox-claude-myproject
+./gbox stop gbox-myproject
 
 # 停止所有容器
 ./gbox stop-all
@@ -99,13 +99,13 @@ gbox-claude-myproject   ~/projects/myproject  agentbox:1.0.1
 ### 查看容器日志
 
 ```bash
-./gbox logs gbox-claude-myproject
+./gbox logs gbox-myproject
 ```
 
 ### 登录容器调试
 
 ```bash
-./gbox shell gbox-claude-myproject
+./gbox shell gbox-myproject
 ```
 
 ## ⚙️ 常用配置
@@ -168,11 +168,11 @@ gbox-claude-myproject   ~/projects/myproject  agentbox:1.0.1
 ```bash
 # 项目 A
 cd ~/projects/project-a
-./gbox claude    # 容器: gbox-claude-project-a
+./gbox claude    # 容器: gbox-project-a
 
 # 项目 B
 cd ~/projects/project-b
-./gbox claude    # 容器: gbox-claude-project-b
+./gbox claude    # 容器: gbox-project-b
 ```
 
 ### 2. 配置文件编辑

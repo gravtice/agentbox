@@ -62,48 +62,80 @@ function wait_for_container_ready() {
 
 # Detect and get main repository directory
 # If current directory is a worktree, return the main repository directory
-# If current directory is a main repository or regular directory, return itself
+# If current directory is a main repository or regular directory, return its root
 # Directory convention: main directory /path/to/project -> worktrees directory /path/to/project-worktrees
 function get_main_repo_dir() {
     local work_dir="$1"
 
-    # Check if it is a git worktree
-    if [[ -f "$work_dir/.git" ]]; then
-        # If .git is a file (not a directory), it might be a worktree
-        local git_content=$(cat "$work_dir/.git" 2>/dev/null)
-        if [[ "$git_content" =~ ^gitdir:\ (.+)$ ]]; then
-            # This is a worktree, try to get the main repository path via git
-            local main_worktree=$(cd "$work_dir" && git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
-            if [[ -n "$main_worktree" ]]; then
-                # git-common-dir returns .git/worktrees/<name> or .git
-                # Need to extract the main repository root directory
-                main_worktree="${main_worktree%/.git*}"
-                if [[ -d "$main_worktree" ]]; then
-                    echo "$main_worktree"
-                    return 0
+    # First, try to use git to get repository root directory
+    # This handles both regular repos and worktrees, and works in subdirectories
+    if command -v git &>/dev/null && [[ -d "$work_dir" ]]; then
+        local repo_root=$(cd "$work_dir" && git rev-parse --show-toplevel 2>/dev/null)
+        if [[ -n "$repo_root" ]] && [[ -d "$repo_root" ]]; then
+            # Check if this is a worktree by checking if .git is a file
+            if [[ -f "$repo_root/.git" ]]; then
+                # This is a worktree, get the main repository directory
+                local main_repo=$(cd "$repo_root" && git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+                if [[ -n "$main_repo" ]]; then
+                    # git-common-dir returns .git/worktrees/<name> or .git
+                    # Need to extract the main repository root directory
+                    main_repo="${main_repo%/.git*}"
+                    if [[ -d "$main_repo" ]]; then
+                        echo "$main_repo"
+                        return 0
+                    fi
                 fi
+
+                # Fallback: check by directory naming convention
+                # If in worktrees directory structure, infer main directory
+                local check_dir="$repo_root"
+                while [[ "$check_dir" != "/" ]]; do
+                    local parent_dir=$(dirname "$check_dir")
+                    local parent_name=$(basename "$parent_dir")
+
+                    if [[ "$parent_name" =~ ^(.+)-worktrees$ ]]; then
+                        local main_name="${BASH_REMATCH[1]}"
+                        local grandparent=$(dirname "$parent_dir")
+                        local main_dir="$grandparent/$main_name"
+
+                        if [[ -d "$main_dir" ]]; then
+                            echo "$main_dir"
+                            return 0
+                        fi
+                    fi
+
+                    check_dir="$parent_dir"
+                done
             fi
-        fi
-    fi
 
-    # If not a worktree or unable to detect main repository, check if in worktrees directory
-    # Infer by directory naming convention: if parent directory name ends with -worktrees
-    local parent_dir=$(dirname "$work_dir")
-    local parent_name=$(basename "$parent_dir")
-
-    if [[ "$parent_name" =~ ^(.+)-worktrees$ ]]; then
-        # Parent directory is worktrees directory, infer main directory
-        local main_name="${BASH_REMATCH[1]}"
-        local grandparent=$(dirname "$parent_dir")
-        local main_dir="$grandparent/$main_name"
-
-        if [[ -d "$main_dir" ]]; then
-            echo "$main_dir"
+            # Not a worktree, return the repository root
+            echo "$repo_root"
             return 0
         fi
     fi
 
-    # Default: return the working directory itself (not a worktree)
+    # Fallback: if not in a git repository, try to infer from directory naming convention
+    # Check if in worktrees directory structure (parent directory ends with -worktrees)
+    local check_dir="$work_dir"
+    while [[ "$check_dir" != "/" ]]; do
+        local parent_dir=$(dirname "$check_dir")
+        local parent_name=$(basename "$parent_dir")
+
+        if [[ "$parent_name" =~ ^(.+)-worktrees$ ]]; then
+            local main_name="${BASH_REMATCH[1]}"
+            local grandparent=$(dirname "$parent_dir")
+            local main_dir="$grandparent/$main_name"
+
+            if [[ -d "$main_dir" ]]; then
+                echo "$main_dir"
+                return 0
+            fi
+        fi
+
+        check_dir="$parent_dir"
+    done
+
+    # Final fallback: return the directory itself
     echo "$work_dir"
 }
 

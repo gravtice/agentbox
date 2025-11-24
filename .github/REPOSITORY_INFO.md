@@ -8,7 +8,7 @@ This file documents the GitHub repository settings for reference and version con
 
 **Description**:
 ```
-Ready-to-use containerized AI coding assistant - Safely run Claude Code, Codex, and Gemini CLI with zero installation required
+Containerized AI coding assistant - Mobile remote control, safe YOLO mode with .git protection, Zsh auto-completion - Claude Code, Codex, Gemini
 ```
 
 **Website**:
@@ -31,7 +31,7 @@ These settings are configured on GitHub.com and cannot be set via local files.
 
 ### Using GitHub CLI
 ```bash
-gh repo edit --description "Ready-to-use containerized AI coding assistant - Safely run Claude Code, Codex, and Gemini CLI with zero installation required"
+gh repo edit --description "Containerized AI coding assistant - Mobile remote control, safe YOLO mode with .git protection, Zsh auto-completion - Claude Code, Codex, Gemini"
 gh repo edit --homepage "https://gravtice.com"
 gh repo edit --add-topic docker,ai,claude-code,openai-codex,gemini,container,devtools,cli,oauth,automation
 ```
@@ -43,7 +43,7 @@ curl -X PATCH \
   -H "Accept: application/vnd.github.v3+json" \
   https://api.github.com/repos/Gravtice/AgentBox \
   -d '{
-    "description": "Ready-to-use containerized AI coding assistant - Safely run Claude Code, Codex, and Gemini CLI with zero installation required",
+    "description": "Containerized AI coding assistant - Mobile remote control, safe YOLO mode with .git protection, Zsh auto-completion - Claude Code, Codex, Gemini",
     "homepage": "https://gravtice.com",
     "topics": ["docker", "ai", "claude-code", "openai-codex", "gemini", "container", "devtools", "cli", "oauth", "automation"]
   }'

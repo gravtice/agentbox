@@ -285,10 +285,8 @@ function start_container() {
     local user_id=$(id -u)
     local group_id=$(id -g)
 
-    # Set container hostname: use container name to ensure each container has independent identity
-    local container_hostname="$container_name"
-
     # Start container in background
+    # Container hostname will be set to container name to ensure each container has independent identity
     # New strategy: gbox independent configuration system
     #   - All Claude configs stored in host ~/.gbox/claude directory
     #   - All Codex configs stored in host ~/.gbox/codex directory
@@ -303,7 +301,7 @@ function start_container() {
     #   - Support mounting read-only reference directories for providing code references
     docker run -d -it \
         --name "$container_name" \
-        --hostname "$container_hostname" \
+        --hostname "$container_name" \
         -v "$GBOX_CLAUDE_DIR:$HOME/.claude" \
         -v "$GBOX_CODEX_DIR:$HOME/.codex" \
         -v "$GBOX_GEMINI_DIR:$HOME/.gemini" \
@@ -390,22 +388,19 @@ function show_status() {
     echo -e "${GREEN}All gbox container status:${NC}"
     echo ""
 
-    printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "Container" "Run Mode" "Agent" "Work Dir" "Status" "Port"
-    echo "-----------------------------------------------------------------------------------------------------------------------------------"
+    printf "%-30s %-60s %-15s %-15s\n" "Container" "Work Dir" "Status" "Port"
+    echo "-----------------------------------------------------------------------------------------------------------------------------"
 
-    # Key format: "{workDir}:{run_mode}:{agent}"
+    # Key format: "{workDir}" (simplified - one container per repository)
     jq -r 'to_entries[] | "\(.key)|\(.value)"' "$STATE_FILE" | while IFS='|' read -r state_key container; do
-        # Separate workDir, run_mode, agent
-        local workdir="${state_key%%:*}"
-        local rest="${state_key#*:}"
-        local run_mode="${rest%%:*}"
-        local agent="${rest##*:}"
+        # State key is the main directory path
+        local workdir="$state_key"
 
         if is_container_running "$container"; then
             local port=$(docker port "$container" 8000 2>/dev/null | cut -d: -f2)
-            printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "$container" "$run_mode" "$agent" "$workdir" "Running" "$port:8000"
+            printf "%-30s %-60s %-15s %-15s\n" "$container" "$workdir" "Running" "$port:8000"
         else
-            printf "%-30s %-20s %-15s %-50s %-15s %-15s\n" "$container" "$run_mode" "$agent" "$workdir" "Stopped" "-"
+            printf "%-30s %-60s %-15s %-15s\n" "$container" "$workdir" "Stopped" "-"
         fi
     done
 }
@@ -518,7 +513,7 @@ function clean_containers() {
     fi
 
     # Clean up invalid mappings (filter directly with jq)
-    # Note: Key format is "{workDir}:{agent}"
+    # Note: Key format is "{workDir}" (simplified - one container per repository)
     local all_containers=$(docker ps -a --format '{{.Names}}')
     safe_jq_update 'to_entries | map(select($containers | contains(.value))) | from_entries' --arg containers "$all_containers"
 

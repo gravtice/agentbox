@@ -21,14 +21,17 @@ Working Directory → Auto-generate Container Name → Auto-manage Container
 
 **Examples:**
 ```bash
-~/projects/my-webapp  → gbox-claude-my-webapp
-~/code/api-service    → gbox-claude-api-service
+~/projects/my-webapp  → gbox-my-webapp
+~/code/api-service    → gbox-api-service
 ```
+
+**Key principle:** One repository corresponds to one container, regardless of agent or run mode.
 
 **Advantages:**
 - No need to manually specify container names
 - Natural isolation between multiple projects
 - Predictable container names
+- Consistent container across all agents (claude, codex, gemini) and modes (local/remote)
 
 ### Configuration Sharing Mechanism
 
@@ -134,7 +137,9 @@ Main functions:
    ↓
 3. Initialize config (~/.gbox/)
    ↓
-4. Generate container name (gbox-claude-{dir})
+4. Generate container name (gbox-{dirname})
+   ├─ Detect main repository directory (supports worktrees)
+   └─ Same name for all agents and modes
    ↓
 5. Check if container exists
    ├─ Exists: Connect to existing container
@@ -201,7 +206,7 @@ Happy provides a complete remote control solution, allowing you to control AI Ag
 ┌─────────────────────────────────────────────────────────────────┐
 │                          Host Machine                            │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │                Container (gbox-happy-claude-*)             │  │
+│  │                Container (gbox-{project})                  │  │
 │  │                                                            │  │
 │  │  ┌──────────────────┐         ┌────────────────────┐     │  │
 │  │  │  happy-daemon    │←───────→│   Claude Code      │     │  │

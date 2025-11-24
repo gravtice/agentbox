@@ -116,33 +116,28 @@ function safe_jq_update() {
 # State key generation
 # ============================================
 
-# Generate state file key: {mainDir}:{run_mode}:{agent}
+# Generate state file key: {mainDir}
 # Note: Use main repository directory instead of work directory to ensure main repo and worktree share the same state key
 # This is consistent with container name generation logic (container names are also based on main repo directory)
-# For only-local: {mainDir}:only-local:{agent}
-# For local-remote: {mainDir}:local-remote:{agent}
+# One repository corresponds to one container, regardless of agent or run mode
 function generate_state_key() {
     local work_dir="$1"
-    local run_mode="$2"
-    local agent="$3"
 
     # Get main repository directory (if it's a worktree, return main repo directory)
     # Ensure main repo and worktree share the same state key
     local main_dir=$(get_main_repo_dir "$work_dir")
 
-    echo "${main_dir}:${run_mode}:${agent}"
+    echo "${main_dir}"
 }
 
 # ============================================
 # Container mapping queries
 # ============================================
 
-# Get container name by work directory, run mode, and agent
-function get_container_by_workdir_mode_agent() {
+# Get container name by work directory
+function get_container_by_workdir() {
     local work_dir="$1"
-    local run_mode="$2"
-    local agent="$3"
-    local key=$(generate_state_key "$work_dir" "$run_mode" "$agent")
+    local key=$(generate_state_key "$work_dir")
     jq -r --arg key "$key" '.[$key] // empty' "$STATE_FILE"
 }
 
@@ -152,14 +147,14 @@ function get_state_key_by_container() {
     jq -r --arg name "$container_name" 'to_entries[] | select(.value == $name) | .key' "$STATE_FILE"
 }
 
-# Get main repository directory from container name (extract mainDir part from key)
+# Get main repository directory from container name
 # Note: Returns main repository directory, not actual work directory (worktree scenario)
 function get_workdir_by_container() {
     local container_name="$1"
     local state_key=$(get_state_key_by_container "$container_name")
     if [[ -n "$state_key" ]]; then
-        # Extract mainDir from "{mainDir}:{run_mode}:{agent}"
-        echo "${state_key%%:*}"
+        # State key is the main directory path
+        echo "$state_key"
     fi
 }
 
@@ -170,10 +165,8 @@ function get_workdir_by_container() {
 # Save container mapping
 function save_container_mapping() {
     local work_dir="$1"
-    local run_mode="$2"
-    local agent="$3"
-    local container_name="$4"
-    local key=$(generate_state_key "$work_dir" "$run_mode" "$agent")
+    local container_name="$2"
+    local key=$(generate_state_key "$work_dir")
 
     # Use safe update function (cross-platform compatible)
     safe_jq_update '. + {($key): $name}' --arg key "$key" --arg name "$container_name"
@@ -182,9 +175,7 @@ function save_container_mapping() {
 # Delete container mapping (by key)
 function remove_container_mapping() {
     local work_dir="$1"
-    local run_mode="$2"
-    local agent="$3"
-    local key=$(generate_state_key "$work_dir" "$run_mode" "$agent")
+    local key=$(generate_state_key "$work_dir")
 
     # Use safe update function (cross-platform compatible)
     safe_jq_update 'del(.[$key])' --arg key "$key"

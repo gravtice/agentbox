@@ -41,7 +41,7 @@ cd ~/projects/myproject
 
 On first launch, it will:
 1. Automatically create the configuration directory `~/.gbox/`
-2. Automatically create container `gbox-claude-myproject`
+2. Automatically create container `gbox-myproject`
 3. Start Claude Code
 4. Prompt you to complete OAuth login
 
@@ -83,14 +83,14 @@ Example output:
 ```
 Running gbox containers:
 Container Name            Working Directory        Image
-gbox-claude-myproject    ~/projects/myproject     agentbox:1.0.1
+gbox-myproject    ~/projects/myproject     agentbox:1.0.1
 ```
 
 ### Stop Containers
 
 ```bash
 # Stop a specific container
-./gbox stop gbox-claude-myproject
+./gbox stop gbox-myproject
 
 # Stop all containers
 ./gbox stop-all
@@ -99,13 +99,13 @@ gbox-claude-myproject    ~/projects/myproject     agentbox:1.0.1
 ### View Container Logs
 
 ```bash
-./gbox logs gbox-claude-myproject
+./gbox logs gbox-myproject
 ```
 
 ### Login to Container for Debugging
 
 ```bash
-./gbox shell gbox-claude-myproject
+./gbox shell gbox-myproject
 ```
 
 ## ⚙️ Common Configurations
@@ -168,11 +168,11 @@ Each project directory automatically creates an independent container:
 ```bash
 # Project A
 cd ~/projects/project-a
-./gbox claude    # Container: gbox-claude-project-a
+./gbox claude    # Container: gbox-project-a
 
 # Project B
 cd ~/projects/project-b
-./gbox claude    # Container: gbox-claude-project-b
+./gbox claude    # Container: gbox-project-b
 ```
 
 ### 2. Configuration File Editing
