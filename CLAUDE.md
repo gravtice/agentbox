@@ -497,6 +497,45 @@ which rm mv rmdir
 - Easier code review and maintenance
 - Professional standard alignment
 
+## Development Tools and Workflow
+
+### Code Writing Tool Standards
+
+For all code writing, fixing, and refactoring tasks, **prefer using** `mcp__codex-cli__ask-codex` tool instead of directly using Edit/Write tools.
+
+**Correct approach**:
+```typescript
+✅ mcp__codex-cli__ask-codex({
+  prompt: "Fix XXX issue...",
+  sandbox: true,              // Must be set to true (enable safe sandbox)
+  model: "gpt-5.1-codex-max"  // Recommended (latest code-specialized model)
+})
+```
+
+**Use cases**:
+- ✅ Bug fixes (security vulnerabilities, functional errors, performance issues)
+- ✅ New feature development (API endpoints, data models, business logic)
+- ✅ Code refactoring (extract functions, optimize structure, eliminate duplication)
+- ✅ Test writing (unit tests, integration tests, edge cases)
+- ✅ Code documentation (function docstrings, type annotations, inline comments)
+
+**Parameter descriptions**:
+- `prompt`: Detailed task description (including problem, solution, verification requirements)
+- `sandbox: true`: **Must be set**, enables workspace-write permission + on-failure approval policy
+- `model`: Optional, recommended to use `gpt-5.1-codex-max` (latest code-specialized model)
+- `config`: Optional, configuration object
+  - `model_reasoning_effort`: Reasoning level (`"low"` / `"medium"` / `"high"`)
+    - `"medium"` (default): General tasks (regular bug fixes, new feature development, unit tests)
+    - `"high"`: Complex tasks (architecture design/refactoring, performance optimization, security vulnerability analysis, multi-file coordinated changes)
+    - `"low"`: Simple tasks (code formatting, adding comments, simple renaming)
+- `search: true`: Optional, enable when web search is needed
+
+**When to use Edit/Write directly**:
+- ❌ Documentation editing (README, CLAUDE.md, API docs, and other Markdown files)
+- ❌ Configuration file modifications (.env, package.json, pyproject.toml, etc.)
+- ❌ Progress document updates (PROGRESS.md, COMPLETION.md, etc.)
+- ❌ Fine-tuning specific parts after Codex tool returns results
+
 ## Code Style Guidelines
 
 ### Shell Script Conventions
