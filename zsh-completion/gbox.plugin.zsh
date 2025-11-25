@@ -23,6 +23,7 @@ _gbox() {
         'exec:Execute command in container'
         'shell:Login to container shell'
         'build:Build container image'
+        'apikey:API key and provider management'
         'help:Show help information'
         'happy:Start AI Agent (remote collaboration mode)'
     )
@@ -87,6 +88,10 @@ _gbox() {
                         _describe -t oauth_cmds 'oauth commands' oauth_cmds
                     fi
                     ;;
+                apikey)
+                    # apikey sub-command completion
+                    _gbox_apikey
+                    ;;
                 keepalive)
                     # keepalive sub-command completion
                     if (( CURRENT == 2 )); then
@@ -128,7 +133,6 @@ _gbox_agent_options() {
         '--ports:Port mapping (e.g., "8000:8000;7000:7001")'
         '--ref-dirs:Read-only reference directories (e.g., "/path/to/ref1;/path/to/ref2")'
         '--proxy:Agent network proxy (e.g., "http://127.0.0.1:7890")'
-        '--api-key:Anthropic API Key (e.g., "sk-xxx")'
         '--debug:Enable debug mode (happy:*)'
         '--model:Specify model (e.g., sonnet, opus, haiku)'
         '--keep:Keep container after exit'
@@ -155,6 +159,205 @@ _gbox_keepalive_accounts() {
     accounts=(${(f)"$(docker ps --filter 'name=gbox-keepalive-' --format '{{.Names}}' 2>/dev/null | sed 's/gbox-keepalive-//')"})
     if (( ${#accounts} > 0 )); then
         _describe -t accounts 'keepalive accounts' accounts
+    fi
+}
+
+# apikey command completion
+_gbox_apikey() {
+    local -a apikey_cmds provider_cmds claude_cmds codex_cmds apikey_agents
+    apikey_cmds=(
+        'provider:Manage providers'
+        'claude:Configure Claude provider'
+        'codex:Configure Codex provider'
+        'regenerate:Regenerate agent configs'
+        'regen:Regenerate agent configs'
+        'help:Show apikey help'
+    )
+
+    provider_cmds=(
+        'add:Add new provider'
+        'update:Update provider'
+        'remove:Remove provider'
+        'list:List all providers'
+        'info:Show provider details'
+        'help:Show provider help'
+    )
+
+    claude_cmds=(
+        'set:Set provider for Claude'
+        'remove:Remove Claude provider config'
+        'set-default:Set default Claude provider'
+        'default:Set default Claude provider'
+        'enable:Enable Claude provider mode'
+        'disable:Disable Claude provider mode'
+        'list:List Claude configurations'
+        'status:Show Claude status'
+        'help:Show Claude help'
+    )
+
+    codex_cmds=(
+        'set:Set provider for Codex'
+        'remove:Remove Codex provider config'
+        'set-default:Set default Codex provider'
+        'default:Set default Codex provider'
+        'enable:Enable Codex provider mode'
+        'disable:Disable Codex provider mode'
+        'list:List Codex configurations'
+        'status:Show Codex status'
+        'help:Show Codex help'
+    )
+
+    apikey_agents=(
+        'claude:Claude Code'
+        'codex:OpenAI Codex'
+    )
+
+    if (( CURRENT == 2 )); then
+        _describe -t apikey_cmds 'apikey commands' apikey_cmds
+        return
+    fi
+
+    case $line[2] in
+        provider)
+            if (( CURRENT == 3 )); then
+                _describe -t provider_cmds 'provider commands' provider_cmds
+                return
+            fi
+
+            case $line[3] in
+                add)
+                    if (( CURRENT == 4 || CURRENT == 5 )); then
+                        _gbox_provider_names
+                    else
+                        _gbox_apikey_provider_opts
+                    fi
+                    ;;
+                update)
+                    if (( CURRENT == 4 )); then
+                        _gbox_provider_names
+                    elif (( CURRENT == 5 )); then
+                        _gbox_provider_names
+                        _gbox_apikey_provider_opts
+                    else
+                        _gbox_apikey_provider_opts
+                    fi
+                    ;;
+                remove|info)
+                    if (( CURRENT == 4 )); then
+                        _gbox_provider_names
+                    fi
+                    ;;
+                list|help)
+                    ;;
+            esac
+            ;;
+        claude|codex)
+            local agent="$line[2]"
+            local -a agent_cmds
+            if [[ "$agent" == "claude" ]]; then
+                agent_cmds=("${claude_cmds[@]}")
+            else
+                agent_cmds=("${codex_cmds[@]}")
+            fi
+
+            if (( CURRENT == 3 )); then
+                _describe -t agent_cmds 'agent commands' agent_cmds
+                return
+            fi
+
+            case $line[3] in
+                set)
+                    if (( CURRENT == 4 )); then
+                        _gbox_provider_names
+                    else
+                        _gbox_apikey_agent_opts "$agent"
+                    fi
+                    ;;
+                remove|set-default|default)
+                    if (( CURRENT == 4 )); then
+                        _gbox_provider_names
+                    fi
+                    ;;
+                list|status|enable|disable|help)
+                    ;;
+            esac
+            ;;
+        regenerate|regen)
+            if (( CURRENT == 3 )); then
+                _describe -t apikey_agents 'agents' apikey_agents
+            fi
+            ;;
+        help)
+            ;;
+    esac
+}
+
+# apikey provider options
+_gbox_apikey_provider_opts() {
+    local provider_opts
+    provider_opts=(
+        '--claude-url:Claude endpoint URL'
+        '--codex-url:Codex endpoint URL'
+        '--description:Provider description'
+    )
+    _describe -t provider_opts 'provider options' provider_opts
+}
+
+# apikey agent options
+_gbox_apikey_agent_opts() {
+    local agent="$1"
+    local -a opts
+    case "$agent" in
+        claude)
+            opts=(
+                '--timeout:Request timeout (ms)'
+                '--haiku-model:Claude Haiku model'
+                '--sonnet-model:Claude Sonnet model'
+                '--opus-model:Claude Opus model'
+                '--subagent-model:Claude Subagent model'
+            )
+            ;;
+        codex)
+            opts=(
+                '--model:Codex model ID'
+                '--display-name:Provider display name'
+            )
+            ;;
+    esac
+
+    if (( ${#opts} > 0 )); then
+        _describe -t agent_opts 'agent options' opts
+    fi
+}
+
+# provider names from unified config
+_gbox_provider_names() {
+    local provider_file="$HOME/.gbox/providers.json"
+    local -a providers
+
+    if [[ -f "$provider_file" ]]; then
+        if command -v jq >/dev/null 2>&1; then
+            providers=(${(f)"$(jq -r '.providers | keys[]?' "$provider_file" 2>/dev/null)"})
+        else
+            providers=(${(f)"$(python - <<'PY'
+import json
+import pathlib
+path = pathlib.Path("~/.gbox/providers.json").expanduser()
+try:
+    data = json.loads(path.read_text())
+    providers = data.get("providers", {})
+    if isinstance(providers, dict):
+        for name in providers.keys():
+            print(name)
+except Exception:
+    pass
+PY
+)"})
+        fi
+    fi
+
+    if (( ${#providers} > 0 )); then
+        _describe -t providers 'providers' providers
     fi
 }
 

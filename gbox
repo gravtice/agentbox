@@ -23,6 +23,7 @@ source "$SCRIPT_DIR/lib/container.sh"
 source "$SCRIPT_DIR/lib/agent.sh"
 source "$SCRIPT_DIR/lib/image.sh"
 source "$SCRIPT_DIR/lib/oauth.sh"
+source "$SCRIPT_DIR/lib/apikey.sh"
 source "$SCRIPT_DIR/lib/keepalive.sh"
 
 check_docker
@@ -47,6 +48,13 @@ case "${1:-}" in
         ;;
     clean)
         clean_containers
+        ;;
+    apikey)
+        set +e  # Temporarily disable exit on error for apikey commands
+        handle_apikey_command "${@:2}"
+        exit_code=$?
+        set -e  # Re-enable exit on error
+        exit $exit_code
         ;;
     oauth)
         handle_oauth_command "${@:2}"
@@ -167,15 +175,6 @@ case "${1:-}" in
                         AGENT_PROXY="$1"
                         shift
                         ;;
-                    --api-key)
-                        shift
-                        if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}Error: --api-key requires argument${NC}"
-                            exit 1
-                        fi
-                        ANTHROPIC_API_KEY="$1"
-                        shift
-                        ;;
                     --debug)
                         DEBUG="happy:*"
                         shift
@@ -201,7 +200,7 @@ case "${1:-}" in
                     *)
                         echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
                         echo -e "${YELLOW}Usage: gbox happy $agent [gbox-options] [-- <agent-args>]${NC}"
-                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --debug, --keep, --name${NC}"
                         echo -e "${YELLOW}Example: gbox happy $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
                         exit 1
                         ;;
@@ -271,15 +270,6 @@ case "${1:-}" in
                         AGENT_PROXY="$1"
                         shift
                         ;;
-                    --api-key)
-                        shift
-                        if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}Error: --api-key requires argument${NC}"
-                            exit 1
-                        fi
-                        ANTHROPIC_API_KEY="$1"
-                        shift
-                        ;;
                     --debug)
                         DEBUG="happy:*"
                         shift
@@ -305,7 +295,7 @@ case "${1:-}" in
                     *)
                         echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
                         echo -e "${YELLOW}Usage: gbox $agent [gbox-options] [-- <agent-args>]${NC}"
-                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --api-key, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --debug, --keep, --name${NC}"
                         echo -e "${YELLOW}Example: gbox $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
                         exit 1
                         ;;
