@@ -48,7 +48,7 @@ See [Happy Architecture](./docs/ARCHITECTURE.md#-happy-remote-control-architectu
 
 ### Entry Point and Module System
 
-- **Main script**: `gbox` (238 lines) - Command router that loads all modules
+- **Main script**: `gbox` (322 lines) - Command router that loads all modules
 - **Module loading order** (must be maintained):
   1. `lib/common.sh` - Constants, colors, utilities (no dependencies)
   2. `lib/state.sh` - Config initialization, container mappings (→ common)
@@ -57,7 +57,8 @@ See [Happy Architecture](./docs/ARCHITECTURE.md#-happy-remote-control-architectu
   5. `lib/agent.sh` - Agent startup and sessions (→ container)
   6. `lib/image.sh` - Image build/pull/push (→ common)
   7. `lib/oauth.sh` - OAuth account management (→ state, common)
-  8. `lib/keepalive.sh` - Auto-maintain login sessions (→ oauth, container, docker)
+  8. `lib/apikey.sh` - API provider management (→ state, common)
+  9. `lib/keepalive.sh` - Auto-maintain login sessions (→ oauth, container, docker)
 
 ### Directory-Driven Design
 
@@ -76,15 +77,18 @@ All containers share configurations under `~/.gbox/`:
 
 ```
 ~/.gbox/
-├── claude/           # Claude Code config (OAuth, MCP servers)
-├── happy/            # Happy config (remote control)
-├── .gitconfig        # Git config (read-only mount)
-├── cache/            # Dependency caches (pip, npm, uv)
-└── containers.json   # Container-to-directory mappings
+├── claude/                   # Claude Code config
+│   ├── .claude.json          # OAuth session & MCP servers
+│   └── api-providers.json    # API provider configurations
+├── happy/                    # Happy config (remote control)
+├── .gitconfig                # Git config (read-only mount)
+├── cache/                    # Dependency caches (pip, npm, uv)
+└── containers.json           # Container-to-directory mappings
 ```
 
 **Shared across containers**:
 - OAuth login sessions (`claude/.claude.json`)
+- API provider configurations (`claude/api-providers.json`)
 - MCP server configurations
 - Git user information
 - Dependency caches
@@ -235,6 +239,59 @@ bash -n lib/*.sh
 ./gbox oauth claude scan
 ```
 
+### API Provider Management
+
+AgentBox supports multiple API providers (Anthropic official, ZhipuAI, DeepSeek, etc.) through persistent configuration management.
+
+```bash
+# Add a new API provider
+./gbox apikey claude add <name> <api-key> [options]
+
+# Examples:
+# Add ZhipuAI provider
+./gbox apikey claude add zhipu sk-zhipu-xxx \
+  --base-url https://open.bigmodel.cn/api/anthropic \
+  --haiku-model glm-4.5-air \
+  --sonnet-model glm-4.6 \
+  --opus-model glm-4.6 \
+  --subagent-model glm-4-flash \
+  --timeout 3000000 \
+  --description "ZhipuAI API"
+
+# Add Anthropic official (no additional options needed)
+./gbox apikey claude add anthropic sk-ant-xxx \
+  --description "Anthropic Official"
+
+# List all providers
+./gbox apikey claude list
+
+# Switch default provider
+./gbox apikey claude switch zhipu
+
+# Check current provider status
+./gbox apikey claude status
+
+# Remove a provider
+./gbox apikey claude remove <name>
+```
+
+**How it works**:
+- Provider configurations are stored in `~/.gbox/claude/api-providers.json`
+- Default provider config is loaded directly at container startup
+- Priority: provider config > OAuth (no CLI override)
+- Environment variables are passed to Claude Code via docker run
+- Supports custom base URLs, timeouts, and model mappings
+- No intermediate configuration file needed (settings.json)
+
+**Supported options**:
+- `--base-url <url>` - API endpoint (optional, defaults to Anthropic official)
+- `--timeout <ms>` - Request timeout in milliseconds (optional, default: 3000000)
+- `--haiku-model <model>` - Override haiku model name (optional)
+- `--sonnet-model <model>` - Override sonnet model name (optional)
+- `--opus-model <model>` - Override opus model name (optional)
+- `--subagent-model <model>` - Override subagent model name (optional)
+- `--description <text>` - Provider description (optional)
+
 ### Agent Startup Options
 
 ```bash
@@ -249,9 +306,6 @@ bash -n lib/*.sh
 
 # HTTP proxy
 ./gbox claude --proxy "http://127.0.0.1:7890"
-
-# API key (alternative to OAuth)
-./gbox claude --api-key "sk-ant-..."
 
 # Debug mode (enable happy:* logs)
 ./gbox claude --debug
@@ -289,6 +343,16 @@ bash -n lib/*.sh
 - `switch_oauth_account()` (line 177) - Interactive account switching
 - `check_token_expiry()` (line 365) - Verify token validity
 - Account files pattern: `.claude.json-email@example.com-001`
+
+### API Provider Management (`lib/apikey.sh`)
+- `load_default_provider_env()` (line 536) - Load default provider config as environment variables
+- `apikey_add()` (line 157) - Add new API provider with options
+- `apikey_remove()` (line 279) - Remove provider with interactive confirmation
+- `apikey_switch()` (line 355) - Switch default provider
+- `apikey_list()` (line 386) - List all providers with details
+- `apikey_status()` (line 445) - Show current default provider status
+- Storage file: `~/.gbox/claude/api-providers.json`
+- Note: Provider config is loaded directly at container startup (no settings.json needed)
 
 ### State Management (`lib/state.sh`)
 - `init_state()` (line 72) - Initialize ~/.gbox/ structure and directories
@@ -508,7 +572,7 @@ For all code writing, fixing, and refactoring tasks, **prefer using** `mcp__code
 ✅ mcp__codex-cli__ask-codex({
   prompt: "Fix XXX issue...",
   sandbox: true,              // Must be set to true (enable safe sandbox)
-  model: "gpt-5.1-codex-max"  // Recommended (latest code-specialized model)
+  model: "gpt-5.1-codex-max"  // latest code-specialized model
 })
 ```
 
@@ -522,7 +586,7 @@ For all code writing, fixing, and refactoring tasks, **prefer using** `mcp__code
 **Parameter descriptions**:
 - `prompt`: Detailed task description (including problem, solution, verification requirements)
 - `sandbox: true`: **Must be set**, enables workspace-write permission + on-failure approval policy
-- `model`: Optional, recommended to use `gpt-5.1-codex-max` (latest code-specialized model)
+- `model: gpt-5.1-codex-max`: latest code-specialized model
 - `config`: Optional, configuration object
   - `model_reasoning_effort`: Reasoning level (`"low"` / `"medium"` / `"high"`)
     - `"medium"` (default): General tasks (regular bug fixes, new feature development, unit tests)

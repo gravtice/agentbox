@@ -68,6 +68,26 @@ BLUE='\033[0;34m'
 NC='\033[0m'  # No Color
 
 # ============================================
+# Standardized output helpers
+# ============================================
+
+function error() {
+    echo -e "${RED}Error: $*${NC}" >&2
+}
+
+function warn() {
+    echo -e "${YELLOW}Warning: $*${NC}" >&2
+}
+
+function info() {
+    echo -e "${BLUE}$*${NC}"
+}
+
+function success() {
+    echo -e "${GREEN}$*${NC}"
+}
+
+# ============================================
 # System detection
 # ============================================
 
@@ -315,6 +335,7 @@ Common Commands:
 
 Advanced Features:
     gbox oauth <cmd>                            OAuth account management
+    gbox apikey <cmd>                           API key management
     gbox keepalive <cmd>                        Container maintenance management
     gbox build [--no-cache]                     Build container image
     gbox pull [tag]                             Pull pre-built image
@@ -434,7 +455,6 @@ Container Resource Configuration:
     gbox claude --memory 8g --cpu 4 -- --model sonnet
     gbox happy claude -m 16g -c 8 -- --resume <session-id>
     gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
-    gbox claude --api-key sk-xxx --debug
 
     # Available parameters:
     --memory, -m <value>       Memory limit (e.g., 4g, 8g, 16g)
@@ -442,7 +462,6 @@ Container Resource Configuration:
     --ports <value>            Port mapping (e.g., "8000:8000;7000:7001")
     --ref-dirs <value>         Read-only reference directories (e.g., "/path/to/ref1;/path/to/ref2")
     --proxy <value>            Agent network proxy (e.g., "http://127.0.0.1:7890")
-    --api-key <value>          Anthropic API Key (e.g., "sk-xxx")
     --debug                    Enable debug mode (happy:*)
     --keep                     Keep container after exit
     --name <value>             Custom container name
