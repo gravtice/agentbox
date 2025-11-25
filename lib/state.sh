@@ -64,6 +64,35 @@ EOF
     fi
 }
 
+# Initialize shared environment file
+function init_env_file() {
+    local env_file="$GBOX_CONFIG_DIR/.env"
+
+    # If file already exists, don't overwrite
+    if [[ -f "$env_file" ]]; then
+        return 0
+    fi
+
+    cat > "$env_file" <<'EOF'
+# gbox shared environment variables
+# This file will be mounted to all gbox containers as ~/.env (read-only)
+# Location: ~/.gbox/.env
+#
+# Usage: Source this file in your shell profile or scripts
+#   source ~/.env
+#
+# Examples:
+# export MY_API_KEY="sk-xxx"
+# export DATABASE_URL="postgresql://localhost/mydb"
+# export DEBUG_MODE="true"
+#
+# Note: Changes to this file require container restart to take effect
+EOF
+
+    echo -e "${GREEN}✓ Shared env file created${NC}"
+    echo -e "${BLUE}  Config file: $env_file${NC}"
+}
+
 # ============================================
 # State directory initialization
 # ============================================
@@ -83,8 +112,9 @@ function init_state() {
         echo '{}' > "$STATE_FILE"
     fi
 
-    # Initialize shared .gitconfig
+    # Initialize shared config files
     init_gitconfig
+    init_env_file
 }
 
 # ============================================

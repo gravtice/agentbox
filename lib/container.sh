@@ -298,6 +298,7 @@ function start_container() {
         echo -e "  Codex config: ${BLUE}$GBOX_CODEX_DIR${NC}"
         echo -e "  Gemini config: ${BLUE}$GBOX_GEMINI_DIR${NC}"
         echo -e "  Happy config: ${BLUE}$GBOX_HAPPY_DIR${NC}"
+        echo -e "  Shared env file: ${BLUE}$GBOX_CONFIG_DIR/.env -> $HOME/.env (read-only)${NC}"
         echo ""
     fi
 
@@ -328,6 +329,7 @@ function start_container() {
         -v "$GBOX_HAPPY_DIR/$container_name:$HOME/.happy" \
         -v "$GBOX_HAPPY_DIR/shared:$HOME/.happy-shared" \
         -v "$GBOX_CONFIG_DIR/.gitconfig:$HOME/.gitconfig:ro" \
+        -v "$GBOX_CONFIG_DIR/.env:$HOME/.env:ro" \
         -v "$main_dir:$main_dir" \
         -v "$worktree_dir:$worktree_dir" \
         -v "$CACHE_DIR/pip:/tmp/.cache/pip" \

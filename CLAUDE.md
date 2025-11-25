@@ -82,6 +82,7 @@ All containers share configurations under `~/.gbox/`:
 │   └── api-providers.json    # API provider configurations
 ├── happy/                    # Happy config (remote control)
 ├── .gitconfig                # Git config (read-only mount)
+├── .env                      # Shared environment variables (read-only mount)
 ├── cache/                    # Dependency caches (pip, npm, uv)
 └── containers.json           # Container-to-directory mappings
 ```
@@ -90,7 +91,8 @@ All containers share configurations under `~/.gbox/`:
 - OAuth login sessions (`claude/.claude.json`)
 - API provider configurations (`claude/api-providers.json`)
 - MCP server configurations
-- Git user information
+- Git user information (`.gitconfig`)
+- Environment variables (`.env`)
 - Dependency caches
 
 **Per-container**:
@@ -105,6 +107,7 @@ Host                            Container                         Mode    Purpos
 ~/.gbox/claude/         →  ~/.claude/                        rw      Claude config
 ~/.gbox/happy/          →  ~/.happy/                         rw      Happy config
 ~/.gbox/.gitconfig      →  ~/.gitconfig                      ro      Git config
+~/.gbox/.env            →  ~/.env                            ro      Environment variables
 ~/projects/myapp/       →  ~/projects/myapp/                 rw      Work directory
 ~/.gbox/cache/pip       →  /tmp/.cache/pip                   rw      pip cache
 ~/.gbox/cache/npm       →  /tmp/.npm                         rw      npm cache
@@ -292,6 +295,33 @@ AgentBox supports multiple API providers (Anthropic official, ZhipuAI, DeepSeek,
 - `--subagent-model <model>` - Override subagent model name (optional)
 - `--description <text>` - Provider description (optional)
 
+### Shared Environment Variables
+
+AgentBox supports a shared `.env` file that is automatically mounted to all containers.
+
+**Location**: `~/.gbox/.env` (host) → `~/.env` (container, read-only)
+
+**Usage**:
+```bash
+# 1. Edit the shared .env file on host
+vim ~/.gbox/.env
+
+# 2. Add your environment variables
+export MY_API_KEY="sk-xxx"
+export DATABASE_URL="postgresql://localhost/mydb"
+export DEBUG_MODE="true"
+
+# 3. Source it in container shell or scripts
+source ~/.env
+```
+
+**Important notes**:
+- File is mounted as read-only (`:ro`) for security
+- Shared across all containers (same as `.gitconfig`)
+- Changes require container restart to take effect
+- Automatically created with template on first run
+- Do NOT store sensitive credentials in version control
+
 ### Agent Startup Options
 
 ```bash
@@ -355,13 +385,14 @@ AgentBox supports multiple API providers (Anthropic official, ZhipuAI, DeepSeek,
 - Note: Provider config is loaded directly at container startup (no settings.json needed)
 
 ### State Management (`lib/state.sh`)
-- `init_state()` (line 72) - Initialize ~/.gbox/ structure and directories
+- `init_state()` (line 101) - Initialize ~/.gbox/ structure and directories
 - `init_gitconfig()` (line 13) - Initialize shared git config for containers
-- `generate_state_key()` (line 123) - Generate state key from working directory (main repo path)
-- `get_container_by_workdir()` (line 138) - Get container name by working directory
-- `save_container_mapping()` (line 166) - Track container-directory mapping
-- `remove_container_mapping()` (line 176) - Clean up mapping by directory
-- `remove_container_mapping_by_container()` (line 185) - Clean up mapping by container name
+- `init_env_file()` (line 68) - Initialize shared .env file with template
+- `generate_state_key()` (line 124) - Generate state key from working directory (main repo path)
+- `get_container_by_workdir()` (line 139) - Get container name by working directory
+- `save_container_mapping()` (line 167) - Track container-directory mapping
+- `remove_container_mapping()` (line 177) - Clean up mapping by directory
+- `remove_container_mapping_by_container()` (line 186) - Clean up mapping by container name
 
 ### Image Management (`lib/image.sh`)
 - `build_image()` (line 21) - Build with auto-detected timezone/mirrors
