@@ -228,8 +228,8 @@ function start_container() {
     # Parse port mapping configuration
     local port_mappings=$(parse_port_mappings "$CONTAINER_PORTS" "$run_mode")
 
-    # Parse read-only reference directories configuration
-    parse_ref_dirs "$CONTAINER_REF_DIRS" "$work_dir"
+    # Parse read-only reference directories configuration (array-based)
+    parse_ref_dirs "$work_dir" "${CONTAINER_REF_DIRS[@]}"
     local -a ref_dir_mappings=("${REF_DIR_MOUNT_ARGS[@]}")
     local -a ref_dir_sources=("${REF_DIR_SOURCE_DIRS[@]}")
 

@@ -47,7 +47,7 @@ CPU_LIMIT="${GBOX_CPU:-${DEFAULT_CPU_LIMIT}}"
 CONTAINER_PORTS="${GBOX_PORTS:-}"                 # Port mapping configuration
 CONTAINER_KEEP="${GBOX_KEEP:-false}"              # Whether to keep container after exit
 CONTAINER_NAME="${GBOX_NAME:-}"                   # Custom container name
-CONTAINER_REF_DIRS="${GBOX_REF_DIRS:-}"           # Read-only reference directories list
+CONTAINER_REF_DIRS=()                             # Read-only reference directories list (array)
 AGENT_PROXY="${GBOX_PROXY:-}"                     # Proxy address (passed to Agent)
 ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"        # Anthropic API Key
 DEBUG="${DEBUG:-}"                                # Debug mode (e.g., happy:*)
@@ -247,24 +247,22 @@ function email_to_suffix() {
     echo "$email" | tr '[:upper:]' '[:lower:]' | sed 's/@/-at-/g' | sed 's/\./-/g'
 }
 
-# Parse and validate read-only reference directories list, and populate REF_DIR_MOUNT_ARGS/REF_DIR_SOURCE_DIRS arrays
+# Parse and validate read-only reference directories array, and populate REF_DIR_MOUNT_ARGS/REF_DIR_SOURCE_DIRS arrays
+# Usage: parse_ref_dirs <work_dir> <ref_dir1> <ref_dir2> ...
 function parse_ref_dirs() {
-    local ref_dirs_config="$1"
-    local work_dir="$2"       # Current working directory, used to avoid conflicts
+    local work_dir="$1"       # Current working directory, used to avoid conflicts
+    shift
+    local -a ref_dirs=("$@")  # Remaining arguments are reference directories
     REF_DIR_MOUNT_ARGS=()
     REF_DIR_SOURCE_DIRS=()
 
-    # If empty, do not mount any reference directories
-    if [[ -z "$ref_dirs_config" ]]; then
+    # If no reference directories provided, do not mount any
+    if (( ${#ref_dirs[@]} == 0 )); then
         return 0
     fi
 
-    # Replace semicolons with newlines, save to temp file to avoid subshell issues
-    local temp_file=$(mktemp)
-    echo "$ref_dirs_config" | tr ';' '\n' > "$temp_file"
-
-    # Read and process line by line
-    while IFS= read -r dir_item; do
+    # Process each directory
+    for dir_item in "${ref_dirs[@]}"; do
         dir_item=$(echo "$dir_item" | xargs)  # Remove whitespace
         [[ -z "$dir_item" ]] && continue
 
@@ -273,6 +271,9 @@ function parse_ref_dirs() {
         if [[ "$dir_item" =~ ^/ ]]; then
             # Already an absolute path
             abs_dir="$dir_item"
+        elif [[ "$dir_item" =~ ^~ ]]; then
+            # Expand tilde
+            abs_dir="${dir_item/#\~/$HOME}"
         else
             # Relative path, convert to absolute path
             abs_dir=$(cd "$dir_item" 2>/dev/null && pwd)
@@ -303,10 +304,7 @@ function parse_ref_dirs() {
         # Add to results (mount in read-only mode to same path)
         REF_DIR_MOUNT_ARGS+=(-v "$abs_dir:$abs_dir:ro")
         REF_DIR_SOURCE_DIRS+=("$abs_dir")
-    done < "$temp_file"
-
-    # Clean up temp file
-    rm -f "$temp_file"
+    done
 }
 
 # ============================================
@@ -426,7 +424,7 @@ Container Resource Configuration:
     GBOX_MEMORY=8g                              Container memory limit (default: 4g)
     GBOX_CPU=4                                  Container CPU cores (default: 2)
     GBOX_PORTS="8000:8000;7000:7001"            Port mapping configuration (default: no ports mapped)
-    GBOX_REF_DIRS="/path/to/ref1;/path/to/ref2" Read-only reference directories (default: none)
+    # Read-only reference directories: use --ref-dir parameter (repeatable)
     GBOX_PROXY="http://127.0.0.1:7890"          Agent network proxy (default: none)
     ANTHROPIC_API_KEY=sk-xxx                    Anthropic API Key (default: none)
     DEBUG=happy:*                               Debug mode (default: none)
@@ -442,11 +440,11 @@ Container Resource Configuration:
     # - All ports mapped to 127.0.0.1 (local access only)
     # - No ports mapped by default, explicitly configure via GBOX_PORTS when needed
 
-    # Read-only reference directories format:
-    # - Format: "directory path" (multiple directories separated by semicolon)
+    # Read-only reference directories:
+    # - Use --ref-dir parameter (repeatable, supports tab completion)
     # - Examples:
-    #   GBOX_REF_DIRS="/Users/me/project1"                        # Single reference directory
-    #   GBOX_REF_DIRS="/Users/me/project1;/Users/me/project2"    # Multiple reference directories
+    #   gbox claude --ref-dir /Users/me/project1                   # Single reference directory
+    #   gbox claude --ref-dir /path/to/ref1 --ref-dir /path/to/ref2  # Multiple reference directories
     # - All directories mounted read-only to same path in container
     # - Provide code references from other projects to AI Agent
     # - Auto-validate directory existence and path conflicts
@@ -454,13 +452,13 @@ Container Resource Configuration:
     # Set via command-line parameters (higher priority than environment variables)
     gbox claude --memory 8g --cpu 4 -- --model sonnet
     gbox happy claude -m 16g -c 8 -- --resume <session-id>
-    gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
+    gbox claude --ref-dir /path/to/ref1 --ref-dir /path/to/ref2
 
     # Available parameters:
     --memory, -m <value>       Memory limit (e.g., 4g, 8g, 16g)
     --cpu, -c <value>          CPU cores (e.g., 2, 4, 8)
     --ports <value>            Port mapping (e.g., "8000:8000;7000:7001")
-    --ref-dirs <value>         Read-only reference directories (e.g., "/path/to/ref1;/path/to/ref2")
+    --ref-dir <path>           Read-only reference directory (repeatable, supports tab completion)
     --proxy <value>            Agent network proxy (e.g., "http://127.0.0.1:7890")
     --debug                    Enable debug mode (happy:*)
     --keep                     Keep container after exit

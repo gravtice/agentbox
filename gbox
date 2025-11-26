@@ -155,14 +155,14 @@ case "${1:-}" in
                         CONTAINER_PORTS="$1"
                         shift
                         ;;
-                    --ref-dirs)
+                    --ref-dir)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}Error: --ref-dirs requires argument${NC}"
-                            echo -e "${YELLOW}Format: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
+                            echo -e "${RED}Error: --ref-dir requires argument${NC}"
+                            echo -e "${YELLOW}Example: --ref-dir /path/to/dir${NC}"
                             exit 1
                         fi
-                        CONTAINER_REF_DIRS="$1"
+                        CONTAINER_REF_DIRS+=("$1")
                         shift
                         ;;
                     --proxy)
@@ -200,8 +200,8 @@ case "${1:-}" in
                     *)
                         echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
                         echo -e "${YELLOW}Usage: gbox happy $agent [gbox-options] [-- <agent-args>]${NC}"
-                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --debug, --keep, --name${NC}"
-                        echo -e "${YELLOW}Example: gbox happy $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dir, --proxy, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}Example: gbox happy $agent --memory 8g --ref-dir /path/to/ref -- --model=sonnet${NC}"
                         exit 1
                         ;;
                 esac
@@ -250,14 +250,14 @@ case "${1:-}" in
                         CONTAINER_PORTS="$1"
                         shift
                         ;;
-                    --ref-dirs)
+                    --ref-dir)
                         shift
                         if [[ $# -eq 0 ]]; then
-                            echo -e "${RED}Error: --ref-dirs requires argument${NC}"
-                            echo -e "${YELLOW}Format: --ref-dirs \"/path/to/dir1;/path/to/dir2\"${NC}"
+                            echo -e "${RED}Error: --ref-dir requires argument${NC}"
+                            echo -e "${YELLOW}Example: --ref-dir /path/to/dir${NC}"
                             exit 1
                         fi
-                        CONTAINER_REF_DIRS="$1"
+                        CONTAINER_REF_DIRS+=("$1")
                         shift
                         ;;
                     --proxy)
@@ -295,8 +295,8 @@ case "${1:-}" in
                     *)
                         echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
                         echo -e "${YELLOW}Usage: gbox $agent [gbox-options] [-- <agent-args>]${NC}"
-                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dirs, --proxy, --debug, --keep, --name${NC}"
-                        echo -e "${YELLOW}Example: gbox $agent --memory 8g --cpu 4 --ports \"8000;7000\" -- --model=sonnet${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dir, --proxy, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}Example: gbox $agent --memory 8g --ref-dir /path/to/ref -- --model=sonnet${NC}"
                         exit 1
                         ;;
                 esac

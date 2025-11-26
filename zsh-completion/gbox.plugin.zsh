@@ -124,22 +124,30 @@ _gbox() {
 
 # Agent parameter options completion
 _gbox_agent_options() {
-    local gbox_opts
-    gbox_opts=(
-        '--memory:Memory limit (e.g., 4g, 8g, 16g)'
-        '-m:Memory limit (e.g., 4g, 8g, 16g)'
-        '--cpu:CPU cores (e.g., 2, 4, 8)'
-        '-c:CPU cores (e.g., 2, 4, 8)'
-        '--ports:Port mapping (e.g., "8000:8000;7000:7001")'
-        '--ref-dirs:Read-only reference directories (e.g., "/path/to/ref1;/path/to/ref2")'
-        '--proxy:Agent network proxy (e.g., "http://127.0.0.1:7890")'
-        '--debug:Enable debug mode (happy:*)'
-        '--model:Specify model (e.g., sonnet, opus, haiku)'
-        '--keep:Keep container after exit'
-        '--name:Custom container name'
-    )
+    # Check if the previous word was --ref-dir, if so complete directories
+    if [[ "${words[CURRENT-1]}" == "--ref-dir" ]]; then
+        _files -/
+        return
+    fi
 
-    _describe -t gbox_opts 'gbox options' gbox_opts
+    # Check if the previous word was other options that need values
+    case "${words[CURRENT-1]}" in
+        --memory|-m|--cpu|-c|--ports|--proxy|--name)
+            # These options need values, don't complete options
+            return
+            ;;
+    esac
+
+    _arguments -s \
+        '(--memory -m)'{--memory,-m}'[Memory limit (e.g., 4g, 8g, 16g)]:memory:' \
+        '(--cpu -c)'{--cpu,-c}'[CPU cores (e.g., 2, 4, 8)]:cpus:' \
+        '--ports[Port mapping (e.g., "8000:8000;7000:7001")]:ports:' \
+        '*--ref-dir[Read-only reference directory (repeatable)]:directory:_files -/' \
+        '--proxy[Agent network proxy (e.g., "http://127.0.0.1:7890")]:proxy:' \
+        '--debug[Enable debug mode (happy:*)]' \
+        '--keep[Keep container after exit]' \
+        '--name[Custom container name]:name:' \
+        '--[Pass remaining args to agent]'
 }
 
 # Complete running container names

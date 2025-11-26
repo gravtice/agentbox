@@ -331,8 +331,8 @@ source ~/.env
 # Port mapping (binds to 127.0.0.1 only)
 ./gbox claude --ports "8000:8000;3000:3000"
 
-# Reference directories (read-only mounts)
-./gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
+# Reference directories (read-only mounts, repeatable, supports tab completion)
+./gbox claude --ref-dir /path/to/ref1 --ref-dir /path/to/ref2
 
 # HTTP proxy
 ./gbox claude --proxy "http://127.0.0.1:7890"
@@ -829,11 +829,26 @@ When modifying:
 ### Parsing Semicolon-Separated Lists
 
 ```bash
-# Pattern used for --ports, --ref-dirs
+# Pattern used for --ports
 IFS=';' read -ra items <<< "$input_string"
 for item in "${items[@]}"; do
     # Process each item
 done
+```
+
+### Handling Repeatable Parameters
+
+```bash
+# Pattern used for --ref-dir (repeatable parameter)
+# In common.sh: CONTAINER_REF_DIRS=()
+# In gbox parsing:
+--ref-dir)
+    shift
+    CONTAINER_REF_DIRS+=("$1")
+    shift
+    ;;
+# In container.sh:
+parse_ref_dirs "$work_dir" "${CONTAINER_REF_DIRS[@]}"
 ```
 
 ### Checking Container State
