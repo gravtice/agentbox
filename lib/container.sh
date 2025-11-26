@@ -233,6 +233,12 @@ function start_container() {
     local -a ref_dir_mappings=("${REF_DIR_MOUNT_ARGS[@]}")
     local -a ref_dir_sources=("${REF_DIR_SOURCE_DIRS[@]}")
 
+    # Build custom environment variables array for docker run
+    local -a custom_env_args=()
+    for env_var in "${CONTAINER_ENVS[@]}"; do
+        custom_env_args+=("-e" "$env_var")
+    done
+
     # Ensure network exists
     ensure_network
 
@@ -284,6 +290,14 @@ function start_container() {
             echo -e "  Reference directories: ${BLUE}${ref_count} read-only directories${NC}"
             for src_dir in "${ref_dir_sources[@]}"; do
                 echo -e "    - ${BLUE}${src_dir}${NC} (read-only)"
+            done
+        fi
+        if (( ${#CONTAINER_ENVS[@]} > 0 )); then
+            local env_count=${#CONTAINER_ENVS[@]}
+            echo -e "  Custom environment variables: ${BLUE}${env_count} variables${NC}"
+            for env_var in "${CONTAINER_ENVS[@]}"; do
+                local env_name="${env_var%%=*}"
+                echo -e "    - ${BLUE}${env_name}${NC}"
             done
         fi
         echo -e "  User permissions: ${BLUE}$(id -u):$(id -g)${NC}"
@@ -352,6 +366,7 @@ function start_container() {
         -e "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1" \
         -e "HAPPY_AUTO_BYPASS_PERMISSIONS=1" \
         -e "DEBUG=${DEBUG:-}" \
+        "${custom_env_args[@]}" \
         --user "root" \
         --memory="$MEMORY_LIMIT" \
         --cpus="$CPU_LIMIT" \

@@ -165,6 +165,21 @@ case "${1:-}" in
                         CONTAINER_REF_DIRS+=("$1")
                         shift
                         ;;
+                    --env)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}Error: --env requires argument${NC}"
+                            echo -e "${YELLOW}Example: --env VAR_NAME=value${NC}"
+                            exit 1
+                        fi
+                        if [[ ! "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+                            echo -e "${RED}Error: Invalid environment variable format: $1${NC}"
+                            echo -e "${YELLOW}Expected format: VAR_NAME=value${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_ENVS+=("$1")
+                        shift
+                        ;;
                     --proxy)
                         shift
                         if [[ $# -eq 0 ]]; then
@@ -200,8 +215,8 @@ case "${1:-}" in
                     *)
                         echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
                         echo -e "${YELLOW}Usage: gbox happy $agent [gbox-options] [-- <agent-args>]${NC}"
-                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dir, --proxy, --debug, --keep, --name${NC}"
-                        echo -e "${YELLOW}Example: gbox happy $agent --memory 8g --ref-dir /path/to/ref -- --model=sonnet${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dir, --env, --proxy, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}Example: gbox happy $agent --memory 8g --env MY_VAR=value -- --model=sonnet${NC}"
                         exit 1
                         ;;
                 esac
@@ -260,6 +275,21 @@ case "${1:-}" in
                         CONTAINER_REF_DIRS+=("$1")
                         shift
                         ;;
+                    --env)
+                        shift
+                        if [[ $# -eq 0 ]]; then
+                            echo -e "${RED}Error: --env requires argument${NC}"
+                            echo -e "${YELLOW}Example: --env VAR_NAME=value${NC}"
+                            exit 1
+                        fi
+                        if [[ ! "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+                            echo -e "${RED}Error: Invalid environment variable format: $1${NC}"
+                            echo -e "${YELLOW}Expected format: VAR_NAME=value${NC}"
+                            exit 1
+                        fi
+                        CONTAINER_ENVS+=("$1")
+                        shift
+                        ;;
                     --proxy)
                         shift
                         if [[ $# -eq 0 ]]; then
@@ -295,8 +325,8 @@ case "${1:-}" in
                     *)
                         echo -e "${RED}Error: Unknown gbox parameter '$1'${NC}"
                         echo -e "${YELLOW}Usage: gbox $agent [gbox-options] [-- <agent-args>]${NC}"
-                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dir, --proxy, --debug, --keep, --name${NC}"
-                        echo -e "${YELLOW}Example: gbox $agent --memory 8g --ref-dir /path/to/ref -- --model=sonnet${NC}"
+                        echo -e "${YELLOW}gbox options: --memory/-m, --cpu/-c, --ports, --ref-dir, --env, --proxy, --debug, --keep, --name${NC}"
+                        echo -e "${YELLOW}Example: gbox $agent --memory 8g --env MY_VAR=value -- --model=sonnet${NC}"
                         exit 1
                         ;;
                 esac

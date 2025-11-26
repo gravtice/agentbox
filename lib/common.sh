@@ -48,6 +48,7 @@ CONTAINER_PORTS="${GBOX_PORTS:-}"                 # Port mapping configuration
 CONTAINER_KEEP="${GBOX_KEEP:-false}"              # Whether to keep container after exit
 CONTAINER_NAME="${GBOX_NAME:-}"                   # Custom container name
 CONTAINER_REF_DIRS=()                             # Read-only reference directories list (array)
+CONTAINER_ENVS=()                                 # Custom environment variables list (array)
 AGENT_PROXY="${GBOX_PROXY:-}"                     # Proxy address (passed to Agent)
 ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"        # Anthropic API Key
 DEBUG="${DEBUG:-}"                                # Debug mode (e.g., happy:*)
@@ -459,10 +460,19 @@ Container Resource Configuration:
     --cpu, -c <value>          CPU cores (e.g., 2, 4, 8)
     --ports <value>            Port mapping (e.g., "8000:8000;7000:7001")
     --ref-dir <path>           Read-only reference directory (repeatable, supports tab completion)
+    --env <KEY=value>          Custom environment variable (repeatable)
     --proxy <value>            Agent network proxy (e.g., "http://127.0.0.1:7890")
     --debug                    Enable debug mode (happy:*)
     --keep                     Keep container after exit
     --name <value>             Custom container name
+
+    # Custom environment variables:
+    # - Use --env parameter (repeatable)
+    # - Examples:
+    #   gbox claude --env HAPPY_SERVER_URL=http://your-server:3000
+    #   gbox claude --env VAR1=value1 --env VAR2=value2
+    # - Environment variables are set before container process starts
+    # - Format: KEY=value (KEY must start with letter or underscore)
 
 Other Environment Variables:
     GBOX_AUTO_CLEANUP=1       Auto-cleanup container after exit (default: keep container)
