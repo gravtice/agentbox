@@ -132,7 +132,7 @@ _gbox_agent_options() {
 
     # Check if the previous word was other options that need values
     case "${words[CURRENT-1]}" in
-        --memory|-m|--cpu|-c|--ports|--proxy|--name)
+        --memory|-m|--cpu|-c|--ports|--proxy|--name|--env)
             # These options need values, don't complete options
             return
             ;;
@@ -143,6 +143,7 @@ _gbox_agent_options() {
         '(--cpu -c)'{--cpu,-c}'[CPU cores (e.g., 2, 4, 8)]:cpus:' \
         '--ports[Port mapping (e.g., "8000:8000;7000:7001")]:ports:' \
         '*--ref-dir[Read-only reference directory (repeatable)]:directory:_files -/' \
+        '*--env[Custom environment variable (repeatable, KEY=value)]:env:' \
         '--proxy[Agent network proxy (e.g., "http://127.0.0.1:7890")]:proxy:' \
         '--debug[Enable debug mode (happy:*)]' \
         '--keep[Keep container after exit]' \
