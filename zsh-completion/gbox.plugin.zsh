@@ -141,7 +141,7 @@ _gbox_agent_options() {
     _arguments -s \
         '(--memory -m)'{--memory,-m}'[Memory limit (e.g., 4g, 8g, 16g)]:memory:' \
         '(--cpu -c)'{--cpu,-c}'[CPU cores (e.g., 2, 4, 8)]:cpus:' \
-        '--ports[Port mapping (e.g., "8000:8000;7000:7001")]:ports:' \
+        '--ports[Port mapping (e.g., "8000:8000;8000-8999")]:ports:' \
         '*--ref-dir[Read-only reference directory (repeatable)]:directory:_files -/' \
         '*--env[Custom environment variable (repeatable, KEY=value)]:env:' \
         '--proxy[Agent network proxy (e.g., "http://127.0.0.1:7890")]:proxy:' \

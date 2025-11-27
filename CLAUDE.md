@@ -329,7 +329,12 @@ source ~/.env
 ./gbox claude --memory 16g --cpu 8
 
 # Port mapping (binds to 127.0.0.1 only)
+# Single port: host_port:container_port
 ./gbox claude --ports "8000:8000;3000:3000"
+# Port range: start-end (same ports on host and container)
+./gbox claude --ports "8000-8999;6000-6999"
+# Mixed: single ports and ranges
+./gbox claude --ports "8080:8080;9000-9100"
 
 # Reference directories (read-only mounts, repeatable, supports tab completion)
 ./gbox claude --ref-dir /path/to/ref1 --ref-dir /path/to/ref2

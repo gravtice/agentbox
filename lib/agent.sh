@@ -18,23 +18,39 @@ function parse_port_mappings() {
     fi
 
     # Split port mappings (semicolon separated)
-    IFS=';' read -ra port_items <<< "$ports_config"
-
-    for port_item in "${port_items[@]}"; do
+    # Use tr + while loop for bash/zsh compatibility
+    echo "$ports_config" | tr ';' '\n' | while read -r port_item; do
         port_item=$(echo "$port_item" | xargs)  # Remove whitespace
         [[ -z "$port_item" ]] && continue
 
-        # Only support host_port:container_port format
-        if [[ "$port_item" =~ ^([0-9]+):([0-9]+)$ ]]; then
-            local host_port="${BASH_REMATCH[1]}"
-            local container_port="${BASH_REMATCH[2]}"
-            result="$result -p 127.0.0.1:${host_port}:${container_port}"
+        # Support port range format: start-end (e.g., 8000-8999)
+        # Host and container ports are the same for ranges
+        # Use parameter expansion for bash/zsh compatibility
+        if [[ "$port_item" =~ ^[0-9]+-[0-9]+$ ]]; then
+            local start_port="${port_item%%-*}"
+            local end_port="${port_item##*-}"
+
+            # Validate port range
+            if [[ "$start_port" -gt "$end_port" ]]; then
+                echo -e "${YELLOW}Warning: Invalid port range '$port_item', start port must be <= end port${NC}" >&2
+                continue
+            fi
+            if [[ "$start_port" -lt 1 || "$end_port" -gt 65535 ]]; then
+                echo -e "${YELLOW}Warning: Port range '$port_item' out of valid range (1-65535)${NC}" >&2
+                continue
+            fi
+
+            echo -n " -p 127.0.0.1:${start_port}-${end_port}:${start_port}-${end_port}"
+
+        # Support single port mapping: host_port:container_port
+        elif [[ "$port_item" =~ ^[0-9]+:[0-9]+$ ]]; then
+            local host_port="${port_item%%:*}"
+            local container_port="${port_item##*:}"
+            echo -n " -p 127.0.0.1:${host_port}:${container_port}"
         else
-            echo -e "${YELLOW}Warning: Port configuration format error '$port_item', should be 'host_port:container_port'${NC}" >&2
+            echo -e "${YELLOW}Warning: Port configuration format error '$port_item', should be 'host_port:container_port' or 'start-end'${NC}" >&2
         fi
     done
-
-    echo "$result"
 }
 
 # ========================
