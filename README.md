@@ -43,7 +43,23 @@ AgentBox provides a one-click installation script that automatically:
 - Configures PATH in your shell
 - Installs shell completion (if available)
 
-### Quick Installation
+### One-Line Installation (no git clone)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gravtice/AgentBox/main/install.sh | bash
+```
+
+- Downloads the latest AgentBox package (main branch) and installs it to `~/.local/bin`
+- Requires `curl` (or `wget`) and `tar` in addition to Docker and `jq`
+- To pin a specific version, set `AGENTBOX_VERSION`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gravtice/AgentBox/main/install.sh | AGENTBOX_VERSION=v1.0.8 bash
+```
+
+- To use a custom archive URL (tar.gz), set `AGENTBOX_ARCHIVE_URL`
+
+### Install from a Cloned Repository
 
 ```bash
 # Clone the repository
@@ -83,11 +99,19 @@ cd /path/to/AgentBox
 
 ### Uninstallation
 
-To uninstall AgentBox:
+**One-line uninstall (no git clone):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gravtice/AgentBox/main/install.sh | bash -s -- --uninstall
+```
+
+To uninstall AgentBox from a cloned repository:
 
 ```bash
 cd /path/to/AgentBox
 ./uninstall.sh
+# or
+./install.sh --uninstall
 ```
 
 The uninstall script will:

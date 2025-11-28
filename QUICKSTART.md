@@ -16,19 +16,30 @@ brew install jq docker
 sudo apt-get install jq docker.io
 ```
 
-### 2. Clone the Repository
+### 2. Install AgentBox
+
+**Option A: One-line install (recommended)**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gravtice/AgentBox/main/install.sh | bash
+```
+
+**Option B: Install from a cloned repository**
 
 ```bash
 git clone https://github.com/Gravtice/AgentBox.git
 cd AgentBox
+./install.sh
 ```
 
 ### 3. Build the Image
 
 ```bash
-./gbox build
+gbox build
 # Wait 2-5 minutes for the build to complete
 ```
+
+> If you are running directly from the repository without installing system-wide, replace `gbox` with `./gbox` in the commands below.
 
 ## 🚀 First-Time Use
 
@@ -36,7 +47,7 @@ cd AgentBox
 
 ```bash
 cd ~/projects/myproject
-./gbox claude
+gbox claude
 ```
 
 On first launch, it will:
@@ -61,22 +72,22 @@ In the Claude Code interface:
 
 ```bash
 # Claude Code (local mode)
-./gbox claude
+gbox claude
 
 # Happy + Claude Code (remote control)
-./gbox happy claude
+gbox happy claude
 
 # Codex
-./gbox codex
+gbox codex
 
 # Gemini
-./gbox gemini
+gbox gemini
 ```
 
 ### View Running Containers
 
 ```bash
-./gbox list
+gbox list
 ```
 
 Example output:
@@ -90,22 +101,22 @@ gbox-myproject    ~/projects/myproject     agentbox:1.0.1
 
 ```bash
 # Stop a specific container
-./gbox stop gbox-myproject
+gbox stop gbox-myproject
 
 # Stop all containers
-./gbox stop-all
+gbox stop-all
 ```
 
 ### View Container Logs
 
 ```bash
-./gbox logs gbox-myproject
+gbox logs gbox-myproject
 ```
 
 ### Login to Container for Debugging
 
 ```bash
-./gbox shell gbox-myproject
+gbox shell gbox-myproject
 ```
 
 ## ⚙️ Common Configurations
@@ -114,43 +125,43 @@ gbox-myproject    ~/projects/myproject     agentbox:1.0.1
 
 ```bash
 # Increase memory and CPU
-./gbox claude --memory 16g --cpu 8
+gbox claude --memory 16g --cpu 8
 ```
 
 ### Map Ports
 
 ```bash
 # Map a single port
-./gbox claude --ports "8000:8000"
+gbox claude --ports "8000:8000"
 
 # Map multiple ports
-./gbox claude --ports "8000:8000;3000:3000;5432:5432"
+gbox claude --ports "8000:8000;3000:3000;5432:5432"
 ```
 
 ### Mount Reference Directories
 
 ```bash
 # Mount another project as read-only reference
-./gbox claude --ref-dirs "/path/to/reference-project"
+gbox claude --ref-dirs "/path/to/reference-project"
 
 # Mount multiple reference directories
-./gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
+gbox claude --ref-dirs "/path/to/ref1;/path/to/ref2"
 ```
 
 ### Use Proxy
 
 ```bash
 # HTTP proxy
-./gbox claude --proxy "http://127.0.0.1:7890"
+gbox claude --proxy "http://127.0.0.1:7890"
 
 # SOCKS5 proxy
-./gbox claude --proxy "socks5://127.0.0.1:1080"
+gbox claude --proxy "socks5://127.0.0.1:1080"
 ```
 
 ### Combine Options
 
 ```bash
-./gbox claude \
+gbox claude \
   --memory 16g \
   --cpu 8 \
   --ports "8000:8000;3000:3000" \
@@ -168,11 +179,11 @@ Each project directory automatically creates an independent container:
 ```bash
 # Project A
 cd ~/projects/project-a
-./gbox claude    # Container: gbox-project-a
+gbox claude    # Container: gbox-project-a
 
 # Project B
 cd ~/projects/project-b
-./gbox claude    # Container: gbox-project-b
+gbox claude    # Container: gbox-project-b
 ```
 
 ### 2. Configuration File Editing
@@ -199,34 +210,34 @@ AgentBox supports all standard MCP servers. Here are some common recommendations
 **Playwright (Browser Automation)**
 ```bash
 # Install Playwright MCP - supports browser automation and webpage screenshots
-./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 ```
 
 **Codex CLI (Terminal Command Execution)**
 ```bash
 # Install Codex CLI MCP - supports secure terminal command execution
-./gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
+gbox claude -- mcp add codex-cli -s user -- npx -y @cexll/codex-mcp-server
 ```
 
 **Filesystem (File System Access)**
 ```bash
 # Install Filesystem MCP - supports reading and writing to the file system
-./gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
+gbox claude -- mcp add filesystem -s user -- npx -y @modelcontextprotocol/server-filesystem /home/guser
 ```
 
 **GitHub (GitHub API Access)**
 ```bash
 # Install GitHub MCP - supports operations on GitHub repositories, Issues, PRs, etc.
-./gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
+gbox claude -- mcp add github -s user -- npx -y @modelcontextprotocol/server-github
 ```
 
 **Basic Operations**
 ```bash
 # List installed MCP servers
-./gbox claude -- mcp list
+gbox claude -- mcp list
 
 # Remove an MCP server
-./gbox claude -- mcp remove <server-name>
+gbox claude -- mcp remove <server-name>
 
 # View MCP server status
 cat ~/.gbox/claude/.claude.json
@@ -243,13 +254,13 @@ When your account reaches usage limits:
 
 ```bash
 # Check current account status
-./gbox oauth claude status
+gbox oauth claude status
 
 # Switch to another account
-./gbox oauth claude switch
+gbox oauth claude switch
 
 # List all accounts
-./gbox oauth claude list
+gbox oauth claude list
 ```
 
 ### 5. Git Worktree Support
@@ -263,14 +274,30 @@ git worktree add ../myproject-worktrees/feature-a feature-a
 
 # Start in the worktree (uses the same container)
 cd ../myproject-worktrees/feature-a
-./gbox claude
+gbox claude
+```
+
+## 🧹 Uninstall AgentBox
+
+If you installed via one-line command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Gravtice/AgentBox/main/install.sh | bash -s -- --uninstall
+```
+
+If you have the repository locally:
+
+```bash
+./uninstall.sh
+# or
+./install.sh --uninstall
 ```
 
 ## 🐛 Troubleshooting
 
 ### Issue 1: Container Fails to Start
 
-**Symptoms**: Container fails to start after running `./gbox claude`
+**Symptoms**: Container fails to start after running `gbox claude`
 
 **Solution**:
 ```bash
@@ -278,13 +305,13 @@ cd ../myproject-worktrees/feature-a
 docker ps
 
 # 2. View container logs
-./gbox logs <container-name>
+gbox logs <container-name>
 
 # 3. Check if the image exists
 docker images | grep agentbox
 
 # 4. Rebuild the image
-./gbox build
+gbox build
 ```
 
 ### Issue 2: OAuth Login Failed
@@ -297,7 +324,7 @@ docker images | grep agentbox
 rm ~/.gbox/claude/.claude.json
 
 # 2. Restart the container
-./gbox claude
+gbox claude
 
 # 3. Follow the prompt to log in again
 ```
@@ -312,10 +339,10 @@ rm ~/.gbox/claude/.claude.json
 docker ps | grep gbox
 
 # 2. Stop the container occupying the port
-./gbox stop <container-name>
+gbox stop <container-name>
 
 # 3. Or use a different port
-./gbox claude --ports "8888:8000"
+gbox claude --ports "8888:8000"
 ```
 
 ### Issue 4: No Network Access Inside Container
@@ -328,10 +355,10 @@ docker ps | grep gbox
 ping anthropic.com
 
 # 2. If proxy is needed, add proxy configuration
-./gbox claude --proxy "http://127.0.0.1:7890"
+gbox claude --proxy "http://127.0.0.1:7890"
 
 # 3. Login to container for debugging
-./gbox shell <container-name>
+gbox shell <container-name>
 ping anthropic.com
 ```
 
@@ -356,7 +383,7 @@ If it's still slow, it may be a network issue. Consider using a proxy.
 ls -la ~/.gbox/
 
 # 2. If it doesn't exist, restarting the container will create it automatically
-./gbox claude
+gbox claude
 
 # 3. Restore backup configuration (if you have a backup)
 tar -xzf gbox-backup-20241106.tar.gz -C ~
@@ -371,13 +398,13 @@ tar -xzf gbox-backup-20241106.tar.gz -C ~
 **Solution**:
 ```bash
 # 1. First uninstall Playwright MCP
-./gbox claude -- mcp remove playwright
+gbox claude -- mcp remove playwright
 
 # 2. Reinstall with isolation parameters
-./gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
+gbox claude -- mcp add playwright -s user -- npx -y @playwright/mcp@latest --isolated --no-sandbox
 
 # 3. Exit the current Claude Code session (Ctrl+D) and re-enter
-./gbox claude
+gbox claude
 ```
 
 ### Clean and Reset
@@ -386,13 +413,13 @@ If you encounter unresolvable issues, you can completely clean up and start fres
 
 ```bash
 # 1. Stop all containers
-./gbox stop-all
+gbox stop-all
 
 # 2. Delete configuration (this will delete OAuth login sessions, requiring re-login)
 rm -rf ~/.gbox
 
 # 3. Restart
-./gbox claude
+gbox claude
 ```
 
 ## 📚 Further Reading
@@ -405,8 +432,8 @@ rm -rf ~/.gbox
 1. **First-time use**: Test with a small project first, then use on larger projects after getting familiar
 2. **Resource configuration**: Adjust memory and CPU based on project size
 3. **Regular backups**: Regularly back up important configurations in the `~/.gbox/` directory
-4. **Container cleanup**: Regularly run `./gbox clean` to clean up stopped containers
-5. **Log viewing**: When encountering issues, first check logs with `./gbox logs <container-name>`
+4. **Container cleanup**: Regularly run `gbox clean` to clean up stopped containers
+5. **Log viewing**: When encountering issues, first check logs with `gbox logs <container-name>`
 
 ## 🤔 Need Help?
 

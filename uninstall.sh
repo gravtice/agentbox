@@ -43,13 +43,30 @@ echo_warn() {
 ask_confirmation() {
     local prompt="$1"
     local default="${2:-n}"
+    local input_device="/dev/stdin"
+    local response
+
+    if [ ! -t 0 ] && [ -r /dev/tty ]; then
+        input_device="/dev/tty"
+    elif [ ! -t 0 ] && [ ! -r /dev/tty ]; then
+        echo_warn "Non-interactive session detected, using default answer: ${default}"
+        if [ "$default" = "y" ]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
 
     while true; do
         if [ "$default" = "y" ]; then
-            read -p "$prompt [Y/n]: " response
+            if ! read -p "$prompt [Y/n]: " response <"$input_device"; then
+                response="y"
+            fi
             response=${response:-y}
         else
-            read -p "$prompt [y/N]: " response
+            if ! read -p "$prompt [y/N]: " response <"$input_device"; then
+                response="n"
+            fi
             response=${response:-n}
         fi
 

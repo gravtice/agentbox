@@ -19,10 +19,19 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -n "${BASH_SOURCE:-}" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+    SCRIPT_DIR="$(pwd)"
+fi
+SOURCE_DIR="$SCRIPT_DIR"
+SOURCE_IS_LOCAL=1
+DOWNLOAD_TEMP_DIR=""
+MODE="install"
 INSTALL_DIR="$HOME/.local/bin/gbox-app"
 BIN_DIR="$HOME/.local/bin"
 SYMLINK_PATH="$BIN_DIR/gbox"
+DEFAULT_ARCHIVE_URL="https://codeload.github.com/Gravtice/AgentBox/tar.gz/refs/heads/main"
 
 # Validate installation directory is under HOME
 case "$INSTALL_DIR" in
@@ -36,11 +45,14 @@ esac
 
 # Setup error rollback trap
 cleanup_on_error() {
-    printf '%b\n' "\033[0;31m❌ Installation failed, rolling back...\033[0m" >&2
-    rm -rf "$INSTALL_DIR"
-    rm -f "$SYMLINK_PATH"
+    printf '%b\n' "\033[0;31m❌ Operation failed, rolling back...\033[0m" >&2
+    if [ "$MODE" = "install" ]; then
+        rm -rf "$INSTALL_DIR"
+        rm -f "$SYMLINK_PATH"
+    fi
 }
 trap cleanup_on_error ERR
+trap '[[ -n "$DOWNLOAD_TEMP_DIR" && -d "$DOWNLOAD_TEMP_DIR" ]] && rm -rf "$DOWNLOAD_TEMP_DIR"' EXIT
 
 echo_info() {
     printf '%b\n' "${BLUE}ℹ️  $1${NC}"
@@ -58,17 +70,145 @@ echo_warn() {
     printf '%b\n' "${YELLOW}⚠️  $1${NC}"
 }
 
+print_usage() {
+    cat <<'EOF'
+Usage: install.sh [--uninstall]
+
+Options:
+  --uninstall   Run uninstallation (downloads package if needed)
+  -h, --help    Show this help message
+EOF
+}
+
+parse_args() {
+    for arg in "$@"; do
+        case "$arg" in
+            --uninstall)
+                MODE="uninstall"
+                ;;
+            -h|--help)
+                print_usage
+                exit 0
+                ;;
+            *)
+                echo_error "Unknown argument: $arg"
+                print_usage
+                exit 1
+                ;;
+        esac
+    done
+}
+
+detect_source_mode() {
+    if [ -x "$SOURCE_DIR/gbox" ] && [ -d "$SOURCE_DIR/lib" ] && [ -d "$SOURCE_DIR/scripts" ]; then
+        SOURCE_IS_LOCAL=1
+    else
+        SOURCE_IS_LOCAL=0
+    fi
+}
+
+download_agentbox_source() {
+    echo_info "Downloading AgentBox package..."
+
+    if [ -z "${AGENTBOX_ARCHIVE_URL:-}" ] && [ -z "${AGENTBOX_VERSION:-}" ]; then
+        echo_info "Using default archive from main branch"
+    fi
+
+    if ! command -v tar >/dev/null 2>&1; then
+        echo_error "tar is required to extract the installation package"
+        exit 1
+    fi
+
+    DOWNLOAD_TEMP_DIR=$(mktemp -d)
+    local archive_url
+    local archive_path="$DOWNLOAD_TEMP_DIR/agentbox.tar.gz"
+
+    if [ -n "${AGENTBOX_ARCHIVE_URL:-}" ]; then
+        archive_url="$AGENTBOX_ARCHIVE_URL"
+    elif [ -n "${AGENTBOX_VERSION:-}" ]; then
+        archive_url="https://codeload.github.com/Gravtice/AgentBox/tar.gz/refs/tags/${AGENTBOX_VERSION}"
+    else
+        archive_url="$DEFAULT_ARCHIVE_URL"
+    fi
+
+    echo_info "Downloading AgentBox from $archive_url"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL "$archive_url" -o "$archive_path"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -O "$archive_path" "$archive_url"
+    else
+        echo_error "curl or wget is required to download AgentBox"
+        exit 1
+    fi
+
+    mkdir -p "$DOWNLOAD_TEMP_DIR/src"
+    tar -xzf "$archive_path" -C "$DOWNLOAD_TEMP_DIR/src"
+
+    local extracted_dir=""
+
+    # Case 1: archive already extracts to the current directory (no top-level folder)
+    if [ -x "$DOWNLOAD_TEMP_DIR/src/gbox" ]; then
+        extracted_dir="$DOWNLOAD_TEMP_DIR/src"
+    else
+        # Case 2: archive has a single top-level folder
+        extracted_dir=$(find "$DOWNLOAD_TEMP_DIR/src" -maxdepth 1 -mindepth 1 -type d | head -n 1)
+    fi
+
+    if [ -z "$extracted_dir" ] || [ ! -x "$extracted_dir/gbox" ]; then
+        echo_error "Failed to locate extracted AgentBox directory (missing gbox entry point)"
+        exit 1
+    fi
+
+    SOURCE_DIR="$extracted_dir"
+    SOURCE_IS_LOCAL=1
+    echo_info "Using downloaded AgentBox source at $SOURCE_DIR"
+}
+
+is_download_required() {
+    if [ "$SOURCE_IS_LOCAL" -ne 1 ]; then
+        return 0
+    fi
+
+    if [ -n "${AGENTBOX_ARCHIVE_URL:-}" ] || [ -n "${AGENTBOX_VERSION:-}" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+prepare_source() {
+    if ! is_download_required; then
+        echo_info "Using existing AgentBox source at $SOURCE_DIR"
+        return
+    fi
+
+    download_agentbox_source
+}
+
 check_dependencies() {
     echo_info "Checking dependencies..."
 
     local missing_deps=()
 
-    if ! command -v docker &> /dev/null; then
-        missing_deps+=("docker")
+    if [ "$MODE" = "install" ]; then
+        if ! command -v docker &> /dev/null; then
+            missing_deps+=("docker")
+        fi
+
+        if ! command -v jq &> /dev/null; then
+            missing_deps+=("jq")
+        fi
     fi
 
-    if ! command -v jq &> /dev/null; then
-        missing_deps+=("jq")
+    if is_download_required; then
+        if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+            missing_deps+=("curl/wget")
+        fi
+
+        if ! command -v tar >/dev/null 2>&1; then
+            missing_deps+=("tar")
+        fi
     fi
 
     if [ ${#missing_deps[@]} -ne 0 ]; then
@@ -87,6 +227,20 @@ check_dependencies() {
                         echo "  - jq: sudo apt-get install jq (Ubuntu/Debian) or sudo yum install jq (CentOS/RHEL)"
                     fi
                     ;;
+                curl/wget)
+                    if [[ "$OSTYPE" == "darwin"* ]]; then
+                        echo "  - curl or wget: brew install curl"
+                    else
+                        echo "  - curl or wget: sudo apt-get install curl (Ubuntu/Debian) or sudo yum install curl (CentOS/RHEL)"
+                    fi
+                    ;;
+                tar)
+                    if [[ "$OSTYPE" == "darwin"* ]]; then
+                        echo "  - tar: typically pre-installed on macOS; reinstall via Xcode Command Line Tools if missing"
+                    else
+                        echo "  - tar: sudo apt-get install tar (Ubuntu/Debian) or sudo yum install tar (CentOS/RHEL)"
+                    fi
+                    ;;
             esac
         done
         exit 1
@@ -103,15 +257,15 @@ install_gbox() {
     mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 
     # Copy gbox script with explicit permissions
-    install -m 0755 "$SCRIPT_DIR/gbox" "$INSTALL_DIR/gbox"
+    install -m 0755 "$SOURCE_DIR/gbox" "$INSTALL_DIR/gbox"
 
     # Copy directories (use cp -r for portability, rsync is not always available)
-    cp -R "$SCRIPT_DIR/lib" "$INSTALL_DIR/"
-    cp -R "$SCRIPT_DIR/scripts" "$INSTALL_DIR/"
+    cp -R "$SOURCE_DIR/lib" "$INSTALL_DIR/"
+    cp -R "$SOURCE_DIR/scripts" "$INSTALL_DIR/"
 
     # Copy VERSION file if exists
-    if [ -f "$SCRIPT_DIR/VERSION" ]; then
-        install -m 0644 "$SCRIPT_DIR/VERSION" "$INSTALL_DIR/VERSION"
+    if [ -f "$SOURCE_DIR/VERSION" ]; then
+        install -m 0644 "$SOURCE_DIR/VERSION" "$INSTALL_DIR/VERSION"
     fi
 
     # Create or update symlink (use -n to avoid following existing symlinks)
@@ -190,7 +344,7 @@ install_completion() {
     echo_info "Installing shell completion..."
 
     # Install zsh completion if zsh is available and oh-my-zsh is installed
-    if ! command -v zsh >/dev/null 2>&1 || [ ! -d "$HOME/.oh-my-zsh" ] || [ ! -d "$SCRIPT_DIR/zsh-completion" ]; then
+    if ! command -v zsh >/dev/null 2>&1 || [ ! -d "$HOME/.oh-my-zsh" ] || [ ! -d "$SOURCE_DIR/zsh-completion" ]; then
         echo_info "Zsh or oh-my-zsh not found, skipping completion installation"
         return 0
     fi
@@ -201,12 +355,12 @@ install_completion() {
     # Copy completion files
     mkdir -p "$zsh_completion_dir"
 
-    if [ ! "$(ls -A "$SCRIPT_DIR/zsh-completion" 2>/dev/null)" ]; then
+    if [ ! "$(ls -A "$SOURCE_DIR/zsh-completion" 2>/dev/null)" ]; then
         echo_warn "zsh-completion directory is empty"
         return 0
     fi
 
-    cp -R "$SCRIPT_DIR/zsh-completion/"* "$zsh_completion_dir/" 2>/dev/null || true
+    cp -R "$SOURCE_DIR/zsh-completion/"* "$zsh_completion_dir/" 2>/dev/null || true
     echo_success "Zsh completion files installed to $zsh_completion_dir"
 
     # Enable plugin in .zshrc
@@ -285,6 +439,21 @@ verify_installation() {
     echo_success "Installation verified successfully"
 }
 
+run_uninstall() {
+    echo_info "Running AgentBox uninstallation..."
+
+    if [ ! -x "$SOURCE_DIR/uninstall.sh" ]; then
+        echo_error "uninstall.sh not found in $SOURCE_DIR"
+        exit 1
+    fi
+
+    if [ -r /dev/tty ]; then
+        bash "$SOURCE_DIR/uninstall.sh" </dev/tty
+    else
+        bash "$SOURCE_DIR/uninstall.sh"
+    fi
+}
+
 print_next_steps() {
     echo ""
     echo_success "AgentBox installation completed!"
@@ -313,7 +482,7 @@ print_next_steps() {
     echo ""
     echo "For more information, see:"
     echo "  - Quick Start: https://github.com/gravtice/agentbox#quick-start"
-    echo "  - Documentation: $SCRIPT_DIR/README.md"
+    echo "  - Documentation: https://github.com/Gravtice/AgentBox#readme"
     echo ""
 }
 
@@ -326,7 +495,16 @@ main() {
     echo "╚══════════════════════════════════════════════════════════╝"
     echo ""
 
+    parse_args "$@"
+    detect_source_mode
     check_dependencies
+    prepare_source
+
+    if [ "$MODE" = "uninstall" ]; then
+        run_uninstall
+        return
+    fi
+
     install_gbox
     configure_path
     install_completion
