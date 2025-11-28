@@ -24,6 +24,7 @@ _gbox() {
         'shell:Login to container shell'
         'build:Build container image'
         'apikey:API key and provider management'
+        'version:Show gbox version'
         'help:Show help information'
         'happy:Start AI Agent (remote collaboration mode)'
     )
@@ -52,6 +53,10 @@ _gbox() {
     )
 
     _arguments -C \
+        '(-h --help)-h[Show help information]' \
+        '(-h --help)--help[Show help information]' \
+        '(-v --version)-v[Show gbox version]' \
+        '(-v --version)--version[Show gbox version]' \
         '1: :->command' \
         '*::arg:->args'
 
